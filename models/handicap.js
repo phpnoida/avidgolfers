@@ -80,6 +80,9 @@ handicapSchema.statics.handicapScore =async function(groupId,playerId){
     if(settings.handicapCal==2){
         totalRounds =20;
         bestRounds=8;
+        
+    }
+    if(settings.strokeCal==2){
         multiplier=1;
     }
     
