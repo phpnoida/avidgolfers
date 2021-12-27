@@ -53,7 +53,7 @@ const individualRoundDetails =async(req,res)=>{
     //console.log('handicapscore',handicapScore)
     res.status(200).json({
         data:data,
-        handicap:handicapScore,
+        handicap:handicapScore.handScre,
         orderOfMerit:totalMerit
     })
 
@@ -128,11 +128,24 @@ const getAll = async(req,res)=>{
         const totalMerit = await Handicap.totalMerit(groupId,el._id);
         obj.merit=totalMerit;
         //calulating individual handicapscore
-        const handicapScore = await Handicap.handicapScore(groupId,el._id);
-        const stroke=(handicapScore*.75).toFixed(1);
-        obj.handicapScore=handicapScore;
-        obj.stroke=stroke;
+        let handicapScore = await Handicap.handicapScore(groupId,el._id);
+        obj.handicapScore=handicapScore.handScre;
+        obj.stroke=handicapScore.stroke;
         finalList.push(obj);
+    }
+    if(req.query.searchKeyword){
+        console.log(req.query.searchKeyword);
+        const sk=req.query.searchKeyword;
+        let expr = new RegExp(`.*${sk}.*`, "i");
+
+        const searchResult=finalList.filter((el)=>{
+            return expr.test(el.memberFullName)
+        })
+        return res.status(200).json({
+        status:true,
+        totalRecords:searchResult.length,
+        data:searchResult
+    })
     }
     res.status(200).json({
         status:'ok',
@@ -143,9 +156,40 @@ const getAll = async(req,res)=>{
     
 }
 
+const getSettings =async(req,res)=>{
+    //console.log('get settings..');
+    const groupId=req.params.groupId;
+    const settings=await Handicap.findOne({
+        groupId:groupId
+    }).select('settings -_id');
+    res.status(200).json({
+        status:true,
+        data:settings
+    })
+}
+
+const updateSettings =async(req,res)=>{
+    console.log('update settings..');
+    const groupId=req.params.groupId;
+    const data = await Handicap.updateMany({
+        groupId:groupId
+    },{
+        $set:{
+            "settings":req.body.settings
+        }
+    })
+    res.status(200).json({
+        status:true,
+        message:'updated..'
+    })
+
+}
+
 module.exports={
     createHandicap,
     getAll,
     individualRoundDetails,
-    updateIndividualRoundDetails
+    updateIndividualRoundDetails,
+    getSettings,
+    updateSettings
 };
