@@ -41,23 +41,32 @@ const individualRoundDetails =async(req,res)=>{
         select:'firstName lastName petName'
     }).sort({roundsDate:-1})
 
-    //calulating totalMoney earned
-    const totalMerit = await Handicap.totalMerit(groupId,memberId);
-    
+    /*
+     handicapScore will be calulated only when
+     player has played atleast 6 rounds
+     else handicapScore will be N/A
+    */
+    let handicapFinalScore;
+    if(data.length>=6){
     /*
      Formula is :
      last 12 rounds
      top 6 scores divided by 6
     */
-    const handicapScore = await Handicap.handicapScore(groupId,memberId)
+    const handicapScore = await Handicap.handicapScore(groupId,memberId);
+    handicapFinalScore=handicapScore.handScre;
+     }else{
+        handicapFinalScore='N/A';
+       }
+    
+    //calulating totalMoney earned
+    const totalMerit = await Handicap.totalMerit(groupId,memberId);
     //console.log('handicapscore',handicapScore)
     res.status(200).json({
         data:data,
-        handicap:handicapScore.handScre,
+        handicap:handicapFinalScore,
         orderOfMerit:totalMerit
     })
-
-
 }
 
 /*
@@ -127,10 +136,21 @@ const getAll = async(req,res)=>{
         //calulating individual total money
         const totalMerit = await Handicap.totalMerit(groupId,el._id);
         obj.merit=totalMerit;
+        const totalMatchesPlayed =await Handicap.totalMatchesPlayed(groupId,el._id);
+        let handicapFinalScore;
+        let strokeFinal;
+        if(totalMatchesPlayed>=6){
         //calulating individual handicapscore
-        let handicapScore = await Handicap.handicapScore(groupId,el._id);
-        obj.handicapScore=handicapScore.handScre;
-        obj.stroke=handicapScore.stroke;
+        const handicapScore = await Handicap.handicapScore(groupId,el._id);
+        handicapFinalScore=handicapScore.handScre;
+        strokeFinal=handicapScore.stroke;
+        }else{
+            handicapFinalScore='N/A';
+            strokeFinal='N/A'
+        }
+        
+        obj.handicapScore=handicapFinalScore;
+        obj.stroke=strokeFinal;
         finalList.push(obj);
     }
     if(req.query.searchKeyword){

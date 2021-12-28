@@ -112,6 +112,18 @@ handicapSchema.statics.handicapScore =async function(groupId,playerId){
     }
 }
 
+handicapSchema.statics.totalMatchesPlayed=async function(groupId,playerId){
+    const data =await this.find({
+         groupId:groupId,
+        players:{$elemMatch:{id:mongoose.Types.ObjectId(playerId)}}
+
+    },{"players.$":1});
+    const totalMatchesPlayed=data.length;
+    return totalMatchesPlayed;
+    
+
+}
+
 
 
 const Handicap=mongoose.model('Handicap',handicapSchema);
