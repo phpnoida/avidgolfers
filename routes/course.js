@@ -1,21 +1,17 @@
 const express = require('express');
-const course=require('./../controllers/courses/course');
-const hole=require('./../controllers/courses/hole');
-const yardage=require('./../controllers/courses/yardage');
+const {addCourse,editCourse,getAll,getOne} =require('./../controllers/course');
+const holeRoute=require('./hole');
 
 const router=express.Router();
 
-//course routes
-router.route('/course').post(course.createCourse);
-router.route('/courses').get(course.getAllCourse);
-router.route('/course/:courseId').patch(course.editCourse);
-router.route('/course/:courseId/courseInfo').get(course.getParticularCourse);
+//hole routing
+router.use('/course/:courseId/hole',holeRoute);
 
-//holes routes
-router.route('/course/:courseId/:holeId').get(hole.getParticularHole);
-router.route('/course/:courseId/:holeId').patch(hole.editHoleDetails);
+router.route('/course').post(addCourse);
+router.route('/course/:courseId').patch(editCourse);
+router.route('/courses').get(getAll);
+router.route('/course/:courseId').get(getOne);
 
-//yardage routes
-router.route('/course/:courseId/yardage').post(yardage.addEditYardage);
+
 
 module.exports=router;

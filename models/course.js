@@ -1,22 +1,6 @@
-const mongoose=require('mongoose');
+const mongoose= require('mongoose');
 const courseSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        default:''
-    },
-    photo:{
-        type:String,
-        default:''
-    },
-    logo:{
-        type:String,
-        default:''
-    },
-    about:{
-        type:String,
-        default:''
-    },
-    gpsLocation:{
+    courseName:{
         type:String,
         default:''
     },
@@ -28,48 +12,64 @@ const courseSchema = new mongoose.Schema({
         type:String,
         default:''
     },
+    about:{
+        type:String,
+        default:''
+    },
+    photo:{
+        type:String,
+        default:''
+    },
+    logo:{
+        type:String,
+        default:''
+    },
+    location:{
+        type:String,
+        default:''
+    },
     totalHoles:{
-        type:Number
+        type:String,
+        default:''
     },
-    totalTees:{
-        type:Number
-    },
-    tees:[
-        {
-        teeName:{
-         type:String
-                },
-        colorCode:{
-         type:String
-                  }
-        }
-    ],
     units:{
         type:Number,
-        default:1 //1=yards 2=meters
-    }
-
-},
-{
-    timestamps:true,
-    toObject:{virtuals:true},
+        default:1,//1-->yards , 2-->meters
+    },
+    totalTees:{
+        type:String,
+        default:''
+    },
+    teesInfo:[
+        {
+         teeName:{
+            type:String,
+            default:''
+               },
+         colorCode:{
+            type:String,
+            default:''
+          },
+         slope:{
+            type:String,
+            default:''
+         },
+         rating:{
+            type:String,
+            default:''
+         }
+        }
+    ]
+},{
     toJSON:{virtuals:true},
+    toObject:{virtuals:true},
+    timestamps:true});
 
-});
-
-//virtual field for holeInfo
 courseSchema.virtual('holeInfo',{
     localField:'_id',
     foreignField:'courseId',
     ref:'Hole'
 })
 
-//virtual field for yardageInfo
-courseSchema.virtual('yardageInfo',{
-    localField:'_id',
-    foreignField:'courseId',
-    ref:'Yardage'
-})
-
-const Course=mongoose.model('Course',courseSchema);
-module.exports=Course;
+const Course = mongoose.model('Course',courseSchema);
+module.exports =Course;
