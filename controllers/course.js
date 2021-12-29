@@ -4,6 +4,26 @@ const Course=require('./../models/course');
 const addCourse = async(req,res)=>{
     //console.log('add golf course');
     const data = await Course.create(req.body);
+    const {teesInfo}=data;
+    const strokes=[];
+    for(let el of teesInfo){
+        const obj={
+            teeId:el._id,
+            colorCode:el.colorCode,
+            teeName:el.teeName,
+            yards:0,
+            stks:0
+        }
+        strokes.push(obj)
+    }
+    //creating holes 
+    for(let i=1;i<=data.totalHoles;i++){
+        await Hole.create({
+            courseId:`${data._id}`,
+            holeNo:`${i}`,
+            strokes:strokes
+        })
+    }
     if(data){
         res.status(201).json({
             status:true,

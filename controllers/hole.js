@@ -1,19 +1,6 @@
 const Course = require('../models/course');
 const Hole=require('./../models/hole');
 
-const addHole =async(req,res)=>{
-    console.log('adding holes..');
-    const courseId=req.params.courseId;
-    req.body.courseId=courseId;
-    const data=await Hole.create(req.body);
-    if(data){
-        res.status(201).json({
-            status:true,
-            data:data
-        })
-    }
-}
-
 const getOne=async(req,res)=>{
     console.log('individual hole..');
     const courseId=req.params.courseId;
@@ -47,4 +34,4 @@ const editHole =async(req,res)=>{
     }
 }
 
-module.exports={addHole,getOne,editHole};
+module.exports={getOne,editHole};

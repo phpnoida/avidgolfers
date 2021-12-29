@@ -13,8 +13,9 @@ const holeSchema = new mongoose.Schema({
         default:''
     },
     par:{
-        type:Number,
-        default:0
+        type:String,
+        default:''
+       
     },
     strokes:[
         {
