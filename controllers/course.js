@@ -21,7 +21,8 @@ const addCourse = async(req,res)=>{
         await Hole.create({
             courseId:`${data._id}`,
             holeNo:`${i}`,
-            strokes:strokes
+            strokes:strokes,
+            mainPhoto:''
         })
     }
     if(data){
@@ -48,7 +49,14 @@ const editCourse =async(req,res)=>{
 
 const getAll = async(req,res)=>{
     console.log('get all..');
-    const data = await Course.find().select('courseName country city');
+    let data = await Course.find().select('courseName country city');
+    //console.log('data',data)
+    if(req.query.searchKeyword!=undefined){
+        const sk=req.query.searchKeyword;
+        data=await Course.find({
+            courseName:new RegExp(`.*${sk}.*`,'i')
+        }).select('courseName country city');
+    }
     if(data){
         res.status(200).json({
             status:true,
@@ -63,7 +71,7 @@ const getOne=async(req,res)=>{
     const courseId=req.params.courseId;
     const data=await Course.findById(courseId).populate({
         path:'holeInfo',
-        select:'holeNo holeName par -courseId'
+        select:'holeNo holeName par -courseId mainPhoto'
     });
     if(data){
         res.status(200).json({
