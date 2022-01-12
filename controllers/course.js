@@ -71,7 +71,7 @@ const getOne=async(req,res)=>{
     const courseId=req.params.courseId;
     const data=await Course.findById(courseId).populate({
         path:'holeInfo',
-        select:'holeNo holeName par -courseId mainPhoto'
+        select:'holeNo holeName par -courseId mainPhoto strokes'
     });
     if(data){
         res.status(200).json({

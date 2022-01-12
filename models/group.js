@@ -15,7 +15,7 @@ const groupsSchema = mongoose.Schema({
         id: {
             type: String,
             required: true,
-            ref: "Users"
+            ref: "User"
         },
         status: {
             type: Number,
