@@ -41,42 +41,97 @@ const individualRoundDetails =async(req,res)=>{
     .populate({
         path:'players.id',
         select:'firstName lastName petName'
-    }).sort({roundsDate:-1})
+    }).sort({roundsDate:-1});
 
     //concept to put * on lowest scores
-    const playersMinScoreLists=[];
-    for(let el of data){
+    let playersMinScoreLists=[];
+    const {settings}=await Handicap.findOne({
+        groupId:groupId
+
+    })
+    if(settings.handicapCal==1){
+        //console.log('inside settings.handicapCal==1')
+        const newData=data.slice(0,12);
+        //console.log(newData);
+        for(let el of newData){
         const {players,settings}=el;
         //console.log(players[0].score,settings);
         playersMinScoreLists.push(players[0].score);
         
+       }
+
     }
-    //console.log(playersMinScoreLists)
-    //console.log(_.sortBy(playersMinScoreLists))
+    else if(settings.handicapCal==2){
+        //console.log('inside settings.handicapCal==2')
+        const newData=data.slice(0,20);
+        //console.log(newData);
+        for(let el of newData){
+            const {players,settings}=el;
+            //console.log(players[0].score,settings);
+            playersMinScoreLists.push(players[0].score);
+        
+       }
+
+    }
+    //console.log(playersMinScoreLists);
     const sortScoreArr=_.sortBy(playersMinScoreLists);
     const lowestSixScores=sortScoreArr.slice(0,6);
     const lowestEightScores=sortScoreArr.slice(0,8);
-    const data1=[];
+    //console.log(lowestSixScores);
+    //console.log(lowestEightScores);
+    
+    let data1=[];
+    const firstTwelveRounds=data.slice(0,12);
+    const firstTwentyRounds=data.slice(0,20);
+    const firstTwelveRoundsId=[];
+    const firstTwentyRoundsId=[];
+    for(let el of firstTwelveRounds){
+        firstTwelveRoundsId.push(el._id)
+    }
+    for(let el of firstTwentyRounds){
+        firstTwentyRoundsId.push(el._id)
+    }
     for(let el of data){
         const {settings}=el;
+        //console.log(el._id);
+        //console.log(firstTwelveRoundsId)
         if(settings.handicapCal==1){
-            if(lowestSixScores.includes(el.players[0].score)){
-                el.players[0].score=el.players[0].score+"*";
+            //console.log('inside settings.handicapCal==1');
+            if(firstTwelveRoundsId.includes(el._id)){
+                //console.log('amit')
+                if(lowestSixScores.includes(el.players[0].score)){
+                    //console.log('bunny');
+                    el.players[0].score=el.players[0].score+"*";
+
+                }
                 data1.push(el)
-              
-            }
-            
-            
-        }
-        else if(settings.handicapCal==2){
-            if(lowestEightScores.includes(el.players[0].score)){
-                el.players[0].score=el.players[0].score+"*";
+                
+            }else{
+                //console.log('adhita')
                 data1.push(el)
-              
             }
 
         }
-    }
+        else if(settings.handicapCal==2){
+            //console.log('inside settings.handicapCal==2');
+            if(firstTwentyRoundsId.includes(el._id)){
+                //console.log('amit')
+                if(lowestEightScores.includes(el.players[0].score)){
+                    //console.log('bunny');
+                    el.players[0].score=el.players[0].score+"*";
+
+                }
+                data1.push(el);
+                
+            }else{
+                //console.log('adhita')
+                data1.push(el)
+            }
+
+        }
+
+        
+    }//end for and end logic for * on indi rounds score
 
     /*
      handicapScore will be calulated only when
