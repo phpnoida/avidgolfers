@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Handicap=require('./../models/handicap');
 const User = require('../models/user');
+const _=require('lodash');
+
 
 /*
 Purpose:save followings into db:
@@ -35,11 +37,46 @@ const individualRoundDetails =async(req,res)=>{
          groupId:groupId,
         players:{$elemMatch:{id:mongoose.Types.ObjectId(memberId)}}
 
-    },{"players.$":1}).select('roundsDate loggedBy')
+    },{"players.$":1}).lean().select('roundsDate loggedBy settings')
     .populate({
         path:'players.id',
         select:'firstName lastName petName'
     }).sort({roundsDate:-1})
+
+    //concept to put * on lowest scores
+    const playersMinScoreLists=[];
+    for(let el of data){
+        const {players,settings}=el;
+        //console.log(players[0].score,settings);
+        playersMinScoreLists.push(players[0].score);
+        
+    }
+    //console.log(playersMinScoreLists)
+    //console.log(_.sortBy(playersMinScoreLists))
+    const sortScoreArr=_.sortBy(playersMinScoreLists);
+    const lowestSixScores=sortScoreArr.slice(0,6);
+    const lowestEightScores=sortScoreArr.slice(0,8);
+    const data1=[];
+    for(let el of data){
+        const {settings}=el;
+        if(settings.handicapCal==1){
+            if(lowestSixScores.includes(el.players[0].score)){
+                el.players[0].score=el.players[0].score+"*";
+                data1.push(el)
+              
+            }
+            
+            
+        }
+        else if(settings.handicapCal==2){
+            if(lowestEightScores.includes(el.players[0].score)){
+                el.players[0].score=el.players[0].score+"*";
+                data1.push(el)
+              
+            }
+
+        }
+    }
 
     /*
      handicapScore will be calulated only when
@@ -63,7 +100,7 @@ const individualRoundDetails =async(req,res)=>{
     const totalMerit = await Handicap.totalMerit(groupId,memberId);
     //console.log('handicapscore',handicapScore)
     res.status(200).json({
-        data:data,
+        data:data1,
         handicap:handicapFinalScore,
         orderOfMerit:totalMerit
     })
@@ -122,13 +159,14 @@ const getAll = async(req,res)=>{
     step2:looping over all players
     to calulate individual fullName,totalMerit and handicapScore
     */
+   
     for(let el of playersList){
         //return console.log('from loop',el);
         let obj={};
         const userInfo =await User.findById(el._id).select('firstName lastName petName');
         //return console.log(userInfo);
         if(userInfo.petName.length>1){
-           obj.memberFullName=`${userInfo.firstName} ${userInfo.lastName}(${userInfo.petName})`;
+           obj.memberFullName=`${userInfo.firstName} ${userInfo.lastName}`;
         }else{
            obj.memberFullName=`${userInfo.firstName} ${userInfo.lastName}`; 
         }
@@ -153,6 +191,7 @@ const getAll = async(req,res)=>{
         obj.stroke=strokeFinal;
         finalList.push(obj);
     }
+    
     if(req.query.searchKeyword){
         console.log(req.query.searchKeyword);
         const sk=req.query.searchKeyword;
@@ -167,14 +206,34 @@ const getAll = async(req,res)=>{
         data:searchResult
     })
     }
+    
+    //client needs stroke of each player to be subtracted from min stroke
+    const stokesOfAllPlayers=[];
+    for(let player of finalList){
+        if(player.stroke!='N/A'){
+            stokesOfAllPlayers.push(player.stroke)
+        }
+    }
+    const mimStrokeValue=Math.min(...stokesOfAllPlayers);
+    const finalList1=[];
+    for(let el of finalList){
+        if(el.stroke!='N/A'){
+            el.stroke=(el.stroke-mimStrokeValue).toFixed(2)
+        }
+        finalList1.push(el)
+    }
+    
+    
+
+
     res.status(200).json({
         status:'ok',
         totalRecords:finalList.length,
-        data:finalList
+        data:finalList1
     })
     
     
-}
+};
 
 const getSettings =async(req,res)=>{
     //console.log('get settings..');

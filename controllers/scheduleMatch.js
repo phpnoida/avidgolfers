@@ -27,8 +27,8 @@ const addMatch = async(req,res)=>{
     players.forEach(function(v,i){
         resData['player'+`${i+1}`]=`${v.playerId.firstName} ${v.playerId.lastName}`
     })
-    resData.matchDate=moment.unix(matchDate).format("DD/MM/YYYY");
-    resData.matchTime=moment.unix(matchDate).format("hh:mm A");
+    resData.matchDate=matchDate;
+    //resData.matchTime=moment.unix(matchDate).format("hh:mm A");
     //console.log('resData',resData);
     /*
     ToDo:Send pushNotifications
@@ -80,8 +80,8 @@ const getMyUpcomingMatches=async(req,res)=>{
         }
         obj.matchId=_id;
         obj.courseName=courseName;
-        obj.matchDate=moment.unix(matchDate).format("DD MMM, ddd");
-        obj.matchTime=moment.unix(matchDate).format("hh:mm A");
+        obj.matchDate=matchDate;
+        //obj.matchTime=moment.unix(matchDate).format("hh:mm A");
         resData.push(obj)
     }
     
