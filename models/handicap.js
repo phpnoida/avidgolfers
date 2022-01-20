@@ -103,11 +103,11 @@ handicapSchema.statics.handicapScore =async function(groupId,playerId){
             totalScore:{$sum:"$players.score"}
         }}
       ])
-    const handScre = ((handicapScore[0].totalScore)/bestRounds).toFixed(1);
-    const stroke=(handScre*multiplier).toFixed(1);
+    const handScre = ((handicapScore[0].totalScore)/bestRounds).toFixed(2);
+    //const stroke=(handScre*multiplier).toFixed(1);
     return {
         handScre,
-        stroke
+        //stroke
 
     }
 }

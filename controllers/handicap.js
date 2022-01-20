@@ -77,10 +77,10 @@ const individualRoundDetails =async(req,res)=>{
     const sortScoreArr=_.sortBy(playersMinScoreLists);
     const lowestSixScores=sortScoreArr.slice(0,6);
     const lowestEightScores=sortScoreArr.slice(0,8);
-    //console.log(lowestSixScores);
-    //console.log(lowestEightScores);
+    console.log(lowestSixScores);
+    console.log(lowestEightScores);
     
-    let data1=[];
+    let data1=[]
     const firstTwelveRounds=data.slice(0,12);
     const firstTwentyRounds=data.slice(0,20);
     const firstTwelveRoundsId=[];
@@ -101,6 +101,11 @@ const individualRoundDetails =async(req,res)=>{
                 //console.log('amit')
                 if(lowestSixScores.includes(el.players[0].score)){
                     //console.log('bunny');
+                    const index=lowestSixScores.indexOf(el.players[0].score);
+                    if(index>-1){
+                        lowestSixScores.splice(index,1)
+                    }
+                    
                     el.players[0].score=el.players[0].score+"*";
 
                 }
@@ -118,6 +123,10 @@ const individualRoundDetails =async(req,res)=>{
                 //console.log('amit')
                 if(lowestEightScores.includes(el.players[0].score)){
                     //console.log('bunny');
+                    const index=lowestEightScores.indexOf(el.players[0].score);
+                    if(index>-1){
+                        lowestEightScores.splice(index,1)
+                    }
                     el.players[0].score=el.players[0].score+"*";
 
                 }
@@ -231,19 +240,19 @@ const getAll = async(req,res)=>{
         obj.merit=totalMerit;
         const totalMatchesPlayed =await Handicap.totalMatchesPlayed(groupId,el._id);
         let handicapFinalScore;
-        let strokeFinal;
+        //let strokeFinal;
         if(totalMatchesPlayed>=6){
         //calulating individual handicapscore
         const handicapScore = await Handicap.handicapScore(groupId,el._id);
         handicapFinalScore=handicapScore.handScre;
-        strokeFinal=handicapScore.stroke;
+        //strokeFinal=handicapScore.stroke;
         }else{
             handicapFinalScore='N/A';
-            strokeFinal='N/A'
+            //strokeFinal='N/A'
         }
         
         obj.handicapScore=handicapFinalScore;
-        obj.stroke=strokeFinal;
+        //obj.stroke=strokeFinal;
         finalList.push(obj);
     }
     
@@ -262,20 +271,35 @@ const getAll = async(req,res)=>{
     })
     }
     
-    //client needs stroke of each player to be subtracted from min stroke
-    const stokesOfAllPlayers=[];
+    //client needs stroke of each player to be subtracted from min handicap
+    //and then multiply with either .75 or 1
+    
+    const handicapOfAllPlayers=[];
     for(let player of finalList){
-        if(player.stroke!='N/A'){
-            stokesOfAllPlayers.push(player.stroke)
+        if(player.handicapScore!='N/A'){
+            handicapOfAllPlayers.push(player.handicapScore)
         }
     }
-    const mimStrokeValue=Math.min(...stokesOfAllPlayers);
+    //console.log('obj---->',handicapOfAllPlayers);
+    const minHandicapValue=Math.min(...handicapOfAllPlayers);
+    //console.log('obj1---->',minHandicapValue);
     const finalList1=[];
+    const data = await Handicap.findOne({groupId:groupId});
+    const {settings} =data; 
+    //console.log('settings-->',settings);
+    let multiplier=.75;
+    if(settings.strokeCal==2){
+        multiplier=1;
+    }
     for(let el of finalList){
-        if(el.stroke!='N/A'){
-            el.stroke=(el.stroke-mimStrokeValue).toFixed(2)
+        if(el.handicapScore!='N/A'){
+            el.stroke=((el.handicapScore-minHandicapValue)*multiplier).toFixed(2);
+
+        }else{
+            el.stroke='N/A';
         }
-        finalList1.push(el)
+        
+        finalList1.push(el);
     }
     
     
