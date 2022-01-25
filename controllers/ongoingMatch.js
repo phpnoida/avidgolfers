@@ -18,6 +18,7 @@ const startMatch=async(req,res)=>{
         editingRights
 
     } =req.body;
+
     //1.get totalNo Holes
     const {totalHoles}=await Course.findById(courseId).select('totalHoles');
     const {holeNo}=await Hole.findById(matchStartedFromHoleId);
@@ -113,10 +114,11 @@ const startMatch=async(req,res)=>{
         $set:{
             matchStatus:2
         }
-    },{new:true})
+    },{new:true});
 
     const roundId=await ongoingMatch.find({
-        holeResult:0
+        holeResult:0,
+        scheduledMatchId:scheduledMatchId
     }).limit(1).select('_id')
 
     if(data){
@@ -140,7 +142,7 @@ const roundDetails =async(roundId)=>{
     //console.log('particular roundDetail');
     const resData={};
     const data=await ongoingMatch.findById(roundId)
-               .select('scheduledMatchId holeNo holeResult courseId holeId players editingRights')
+               .select('scheduledMatchId holeNo holeResult courseId holeId players editingRights matchArr backNineArr scoringFormat scoringDetails')
     //populating data
     const data1=await data.populate({
         path:'scheduledMatchId',
@@ -190,6 +192,19 @@ const roundDetails =async(roundId)=>{
             strokeplayersName.push(player.playerId.firstName)
          }
    }
+
+   //autoPress sedning 9th hole matchArr result
+   //getting score at 9th hole
+   if(data.scoringFormat==1){
+       const score = await ongoingMatch.findOne({
+           scheduledMatchId:data1.scheduledMatchId._id
+
+       }).select('matchArr').skip(8).limit(1);
+       //console.log('f9',score);
+       resData.fontNine=score.matchArr;
+
+   }
+   
    
     //final resData
     resData.roundId=_id;
@@ -205,6 +220,11 @@ const roundDetails =async(roundId)=>{
     resData.players=players;
     resData.strokeGivenTo=strokeplayersName;
     resData.allTeeYardages=strokes;
+    //for autoPress
+    resData.matchArr=data.matchArr;
+    resData.backNineArr=data.backNineArr;
+    resData.scoringFormat=data.scoringFormat;
+    resData.scoringDetails=data.scoringDetails;
 
     return resData;
 }
@@ -294,6 +314,8 @@ const recordScore=async(req,res)=>{
 
     //cal holeResult
     holeResult=ongoingMatch.getholeResult(topGrMinScore,bottGrMinScore);
+    
+   
 
 
     //cal tgUpBy,bgUpBy
@@ -328,6 +350,8 @@ const recordScore=async(req,res)=>{
     const points=ongoingMatch.getPoints(holeResult,scoringFormat,addPoint);
     tgPoints=points.tgPoints;
     bgPoints=points.bgPoints;
+
+    
     
 
 
@@ -345,10 +369,41 @@ const recordScore=async(req,res)=>{
 
 
 
+
+    /*
+    implementing AutoPress
+    after in db holeResult,UpBy&Points r updated
+    */
+    
+    const isHoleWon=await ongoingMatch.findById(roundId);
+    //console.log('isHoleWon',isHoleWon)
+    if(isHoleWon.firstTimeWonBy==1){
+        await ongoingMatch.updateMany({
+            scheduledMatchId:scheduledMatchId._id
+        },{
+            $set:{
+                firstTimeWonBy:holeResult
+            }
+        })
+    }
+
+    //console.log('points',points);
+    //console.log('scoringFormat',scoringFormat);
+    //console.log('scoringDetails',scoringDetails)
+    if(scoringFormat==1){
+        console.log('autoPress is being played..');
+        const {firstWin}=scoringDetails;
+        const autoPress=ongoingMatch.autoPress(holeResult,firstWin,scheduledMatchId._id,roundId);
+    }
+
+
+
+
     //preparing final response by getting nextRound Details
     const nextRoundId =await ongoingMatch.findOne({
         _id:{$gt:roundId},
-        holeResult:0
+        holeResult:0,
+        scheduledMatchId:scheduledMatchId._id
     }).sort({_id:1}).limit(1);
     //check that round is not the last round
     if(nextRoundId){
@@ -365,7 +420,20 @@ const recordScore=async(req,res)=>{
         }
     }//end of if
 
-    const finalMatchResult=await ongoingMatch.calFinalResult(scheduledMatchId._id);
+    let finalMatchResult;
+    if(scoringFormat==2){
+      console.log('finalResult for matchPlay');
+      finalMatchResult=await ongoingMatch.calFinalResult(scheduledMatchId._id);
+
+    }
+
+    else if(scoringFormat==1){
+        console.log('finalResult for autoPress');
+        finalMatchResult=await ongoingMatch.calFinalResultAuto(scheduledMatchId._id);
+
+    }
+
+    
 
     /*
     once match completed we need to change status in scheduledMatch to 3
@@ -446,6 +514,30 @@ const myOngoingMatch=async(req,res)=>{
 
 }
 
+//player is not allowed to startMatch
+//when already match is goingOn
+
+const canStartMatch=async(req,res,next)=>{
+    console.log('check startMatch eligibility..');
+    const userId=req.params.userId;
+    const data=await ongoingMatch.findOne({
+        holeResult:0,
+        "players":{$elemMatch:{"playerId":userId}}
+    });
+    console.log('data',data);
+    if(data!=null){
+       return res.status(200).json({
+        status:false,
+        message:'Please complete match first'
+       })
+    }
+    res.status(200).json({
+           status:true,
+           message:'eligible to startMatch'
+       })
+    
+};
+
 
 
 
@@ -455,5 +547,6 @@ module.exports={
     getRoundDetails,
     recordScore,
     getAllRounds,
-    myOngoingMatch
+    myOngoingMatch,
+    canStartMatch
 };
