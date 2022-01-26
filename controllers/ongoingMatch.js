@@ -5,7 +5,7 @@ const scheduleMatch=require('./../models/scheduleMatch');
 const matchFormat=require('./../models/matchFormat');
 
 const startMatch=async(req,res)=>{
-    console.log('startMatch..');
+    //console.log('startMatch..');
     
     //getting data from frontend
     const {
@@ -21,7 +21,10 @@ const startMatch=async(req,res)=>{
 
     //1.get totalNo Holes
     const {totalHoles}=await Course.findById(courseId).select('totalHoles');
-    const {holeNo}=await Hole.findById(matchStartedFromHoleId);
+    const {holeNo}=await Hole.findOne({
+        courseId:courseId,
+        _id:matchStartedFromHoleId
+    });
     let matchStartedFromHoleNo=holeNo;
     const totalHolesPlaying=totalHoles;
     /*
@@ -221,8 +224,8 @@ const roundDetails =async(roundId)=>{
     resData.strokeGivenTo=strokeplayersName;
     resData.allTeeYardages=strokes;
     //for autoPress
-    resData.matchArr=data.matchArr;
-    resData.backNineArr=data.backNineArr;
+    resData.matchArrPresent=data.matchArr;
+    resData.backNineArrPresent=data.backNineArr;
     resData.scoringFormat=data.scoringFormat;
     resData.scoringDetails=data.scoringDetails;
 
@@ -232,7 +235,7 @@ const roundDetails =async(roundId)=>{
 //get roundId from frontend
 //send them details of particular roundId
 const getRoundDetails=async(req,res)=>{
-    console.log('start scoring...');
+    //console.log('start scoring...');
     const roundId=req.params.roundId;
     const data = await roundDetails(roundId);
     if(data){
@@ -252,7 +255,7 @@ mainly we update downIn&net
 and give roundResult
 */
 const recordScore=async(req,res)=>{
-    console.log('recordScore..')
+    //console.log('recordScore..')
     const roundId=req.params.roundId;
     const scores=req.body.scores;
 
@@ -390,10 +393,15 @@ const recordScore=async(req,res)=>{
     //console.log('points',points);
     //console.log('scoringFormat',scoringFormat);
     //console.log('scoringDetails',scoringDetails)
+    let matchArr1=[];//will be used to send in response
+    let backNineArr1=[];//will be used to send in response
     if(scoringFormat==1){
-        console.log('autoPress is being played..');
+        //console.log('autoPress is being played..');
         const {firstWin}=scoringDetails;
-        const autoPress=ongoingMatch.autoPress(holeResult,firstWin,scheduledMatchId._id,roundId);
+        const autoPress=await ongoingMatch.autoPress(holeResult,firstWin,scheduledMatchId._id,roundId);
+        const {matchArr,backNineArr}=await ongoingMatch.findById(roundId).select('matchArr backNineArr');
+        matchArr1=matchArr;
+        backNineArr1=backNineArr;
     }
 
 
@@ -414,6 +422,8 @@ const recordScore=async(req,res)=>{
                status:true,
                result:holeResult,
                isLastRound:false,
+               matchArrLast:matchArr1,
+               backNineArrLast:backNineArr1,
                data:nextRoundData
             })
 
@@ -422,13 +432,13 @@ const recordScore=async(req,res)=>{
 
     let finalMatchResult;
     if(scoringFormat==2){
-      console.log('finalResult for matchPlay');
+      //console.log('finalResult for matchPlay');
       finalMatchResult=await ongoingMatch.calFinalResult(scheduledMatchId._id);
 
     }
 
     else if(scoringFormat==1){
-        console.log('finalResult for autoPress');
+        //console.log('finalResult for autoPress');
         finalMatchResult=await ongoingMatch.calFinalResultAuto(scheduledMatchId._id);
 
     }
@@ -443,7 +453,8 @@ const recordScore=async(req,res)=>{
     if(Object.keys(finalMatchResult).length !== 0){
         await scheduleMatch.findByIdAndUpdate(scheduledMatchId._id,{
             $set:{
-                matchStatus:3
+                matchStatus:3,
+                matchResult:finalMatchResult
             }
         })
 
@@ -469,7 +480,7 @@ when user clicks on hole dropdown
 */
 
 const getAllRounds=async(req,res)=>{
-    console.log('allRounds of particular match');
+    //console.log('allRounds of particular match');
     const scheduledMatchId=req.params.matchId;
     const frontNine=await ongoingMatch.find({
         scheduledMatchId:scheduledMatchId
@@ -494,13 +505,13 @@ will send roundId if there any match
 */
 
 const myOngoingMatch=async(req,res)=>{
-    console.log('anyOngoing match...');
+    //console.log('anyOngoing match...');
     const userId=req.params.userId;
     const roundId=await ongoingMatch.findOne({
         editingRights:userId,
         holeResult:0
     }).select('_id');
-    console.log('roundId',roundId);
+    //console.log('roundId',roundId);
     if(roundId){
         return res.status(200).json({
             status:true,
@@ -518,13 +529,13 @@ const myOngoingMatch=async(req,res)=>{
 //when already match is goingOn
 
 const canStartMatch=async(req,res,next)=>{
-    console.log('check startMatch eligibility..');
+    //console.log('check startMatch eligibility..');
     const userId=req.params.userId;
     const data=await ongoingMatch.findOne({
         holeResult:0,
         "players":{$elemMatch:{"playerId":userId}}
     });
-    console.log('data',data);
+    //console.log('data',data);
     if(data!=null){
        return res.status(200).json({
         status:false,

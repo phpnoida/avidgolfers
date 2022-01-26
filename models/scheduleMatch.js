@@ -40,7 +40,8 @@ const scheduleMatchSchema = new mongoose.Schema({
     matchStatus:{
         type:Number,
         default:1,//1->scheduled 2->started 3->completed/past 4->friends
-    }
+    },
+    matchResult:Object
 },{timestamps:true});
 
 const scheduleMatch=mongoose.model('scheduleMatch',scheduleMatchSchema);

@@ -160,14 +160,14 @@ decide their min net score
 
 */
 ongoingMatchSchema.statics.teamsMinNetScore=(groupOptionsSeqId,players)=>{
-    console.log('inside teamPoints',groupOptionsSeqId)
+    //console.log('inside teamPoints',groupOptionsSeqId)
     const teamPoints={};
     const topGr=[];
     const bottGr=[];
 
     //logic for [2vs2]
     if(groupOptionsSeqId==1){
-        console.log('inside if1')
+        //console.log('inside if1')
         for(let player of players){
             if(player.playerSeqId==1 ||player.playerSeqId==2 ){
                 topGr.push(player.net)
@@ -182,7 +182,7 @@ ongoingMatchSchema.statics.teamsMinNetScore=(groupOptionsSeqId,players)=>{
 
     //logic for [1vs1]
     if(groupOptionsSeqId==2){
-        console.log('inside if2')
+        //console.log('inside if2')
         for(let player of players){
             if(player.playerSeqId==1){
                 topGr.push(player.net)
@@ -194,12 +194,12 @@ ongoingMatchSchema.statics.teamsMinNetScore=(groupOptionsSeqId,players)=>{
         }//loop end
 
     }
-    console.log('topGr',topGr);
-    console.log('bottGr',bottGr);
+    //console.log('topGr',topGr);
+    //console.log('bottGr',bottGr);
     
     teamPoints.topGrMinScore=Math.min(...topGr);
     teamPoints.bottGrMinScore=Math.min(...bottGr);
-    console.log('teampoints',teamPoints);
+    //console.log('teampoints',teamPoints);
     return teamPoints;
 }
 
@@ -212,7 +212,7 @@ holeResult=3(bgw)
 
 */
 ongoingMatchSchema.statics.getholeResult=(topGrMinScore,bottGrMinScore)=>{
-    console.log('inside getholeResult',topGrMinScore,bottGrMinScore)
+    //console.log('inside getholeResult',topGrMinScore,bottGrMinScore)
     let holeResult;
     if(topGrMinScore<bottGrMinScore){
             holeResult=2;
@@ -255,8 +255,8 @@ addPoint varies for front9 and back9
 */
 
 ongoingMatchSchema.statics.getPoints=(holeResult,scoringFormat,addPoint)=>{
-    console.log('inside getPoints...');
-    console.log('snig',holeResult,scoringFormat,addPoint);
+    //console.log('inside getPoints...');
+    //console.log('snig',holeResult,scoringFormat,addPoint);
 
     const points={
         tgPoints:0,
@@ -289,7 +289,7 @@ ongoingMatchSchema.statics.getPoints=(holeResult,scoringFormat,addPoint)=>{
 
 
 ongoingMatchSchema.statics.calFinalResult= async function(scheduledMatchId){
-    console.log('inside calFinalResult matchPlay',scheduledMatchId);
+    //console.log('inside calFinalResult matchPlay',scheduledMatchId);
     const resultObj={};
     
     
@@ -400,7 +400,7 @@ ongoingMatchSchema.statics.calFinalResult= async function(scheduledMatchId){
 }
 
 ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
-    console.log('inside calFinalResult autoPress',scheduledMatchId);
+    //console.log('inside calFinalResult autoPress',scheduledMatchId);
     const resultObj={};
     //get matchArr value at 9th hole(front9)
     const scoreF=await this.findOne({
@@ -431,7 +431,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     const diff=calDiff(scoreF.matchArr);
     
     if(diff>0){
-        console.log('diff is greater means topGr wins front9');
+        //console.log('diff is greater means topGr wins front9');
         const points=diff*frontPoints;
         
         resultObj.pointsFront={
@@ -442,7 +442,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
         }
     }
     else if(diff<0){
-        console.log('diff is less means bottomGr wins front9');
+        //console.log('diff is less means bottomGr wins front9');
         const points=diff*frontPoints;
         
         resultObj.pointsFront={
@@ -455,7 +455,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     }
 
     else if(diff==0){
-        console.log('diff is 0 means front9 is halved');
+        //console.log('diff is 0 means front9 is halved');
         
         resultObj.pointsFront={
             arr:scoreF.matchArr,
@@ -484,7 +484,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
         //console.log('break',matchArr,backNineArr);
         const diff=calDiff(backNineArr);
         if(diff>0){
-            console.log('diff is greater means topGr wins back9');
+            //console.log('diff is greater means topGr wins back9');
             const points=diff*backPoints;
             
             resultObj.pointsBack={
@@ -495,7 +495,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             }
         }
         else if(diff<0){
-            console.log('diff is less means bottomGr wins back9');
+            //console.log('diff is less means bottomGr wins back9');
             const points=diff*backPoints;
             
             resultObj.pointsBack={
@@ -508,7 +508,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
         }
 
         else if(diff==0){
-            console.log('diff is 0 means back9 is halved');
+            //console.log('diff is 0 means back9 is halved');
             
             resultObj.pointsBack={
                 arr:backNineArr,
@@ -533,9 +533,15 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     const finalMatchArr=matchData.splice(-1);
     const finalDiff=calDiff(finalMatchArr[0].matchArr);
     if(finalDiff>0){
-        console.log('diff is greater means topGr wins overal match');
+        //console.log('diff is greater means topGr wins overal match');
         const points=finalDiff*matchPoints;
-        const totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
+        let totalPoints;
+        if(resultObj.pointsBack!==undefined){
+            totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
+        }else{
+            totalPoints=points+resultObj.pointsFront.points;
+        }
+        
         
         resultObj.wonBy={
             arr:finalMatchArr[0].matchArr,
@@ -546,9 +552,14 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
         }
     }
     else if(finalDiff<0){
-        console.log('diff is less means bottomGr wins overal match');
+        //console.log('diff is less means bottomGr wins overal match');
         const points=finalDiff*matchPoints;
-        const totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
+        let totalPoints;
+        if(resultObj.pointsBack!==undefined){
+            totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
+        }else{
+            totalPoints=points+resultObj.pointsFront.points;
+        }
         
         resultObj.wonBy={
             arr:finalMatchArr[0].matchArr,
@@ -561,7 +572,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     }
 
     else if(finalDiff==0){
-        console.log('diff is 0 means overall match is halved');
+        //console.log('diff is 0 means overall match is halved');
         
         resultObj.wonBy={
             arr:finalMatchArr[0].matchArr,
@@ -580,7 +591,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
 }
 
 ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,scheduledMatchId,roundId){
-        console.log('inside autoPress',holeResult,firstWin,scheduledMatchId,roundId);
+        //console.log('inside autoPress',holeResult,firstWin,scheduledMatchId,roundId);
 
 
         const upBy=await this.aggregate([
@@ -596,7 +607,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
 
 
-        console.log('upBy--->',upBy);
+        //console.log('upBy--->',upBy);
 
 
         //who won first time front9
@@ -604,7 +615,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                                            scheduledMatchId:scheduledMatchId
                                             }).select('firstTimeWonBy');
 
-        console.log('firstTimeWonBy--->',firstTimeWonBy);
+        //console.log('firstTimeWonBy--->',firstTimeWonBy);
 
         
 
@@ -617,7 +628,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                             return el._id.toString()==roundId.toString();
             
                             });
-        console.log('rowId',rowId);
+        //console.log('rowId',rowId);
 
         
         //getting previous rows matchArr
@@ -630,7 +641,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
             let data=await this.find({
                         scheduledMatchId:scheduledMatchId
                     }).skip(rowId-1).limit(1);
-            console.log('data--->',data);
+            //console.log('data--->',data);
             matchArr=data[0].matchArr;
             backArr=data[0].backNineArr;
         }
@@ -639,7 +650,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
         //checking which fomat is beingPlayed
         let defaultArr;
         if(firstWin==21){
-            console.log('0,2,0 format')
+            //console.log('0,2,0 format')
             if(holeResult==2){
                 defaultArr=[0,2,0]
 
@@ -652,7 +663,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
         }
 
         else if(firstWin==31){
-            console.log('1,1,1 format')
+            //console.log('1,1,1 format')
             if(holeResult==2){
                 defaultArr=[1,-1,1]
 
@@ -665,7 +676,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
         }
 
         else if(firstWin==51){
-            console.log('1,1,1,1,1 format')
+            //console.log('1,1,1,1,1 format')
             if(holeResult==2){
                 defaultArr=[1,-1,1,-1,1]
 
@@ -679,13 +690,14 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
         
             
         if(holeResult==2){
-                console.log('holeWon by topGr..')
+                //console.log('holeWon by topGr..')
                 //hole won by topGroup
                 if(upBy[0].tgUpBy==1 && firstTimeWonBy==2){
                      //topGr won for first time
-                    console.log('topGr won for 1st time..')
+                    //console.log('topGr won for 1st time..')
                     await this.updateOne({
-                         scheduledMatchId:scheduledMatchId
+                         scheduledMatchId:scheduledMatchId,
+                         _id:roundId
                      },{
                                     $set:{
                                         "matchArr":defaultArr
@@ -693,18 +705,18 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                                 })
                 }else{
                     //after firstTime won
-                    console.log('secondWin topGr');
+                    //console.log('secondWin topGr');
                     if(rowId<=8){
                         //playing front9
                         //adding 1 to all arr elements
                         matchArr=matchArr.map((el)=>{
                             return el+1;
                         })
-                        console.log('matchArr',matchArr);
+                        //console.log('matchArr',matchArr);
                         if(matchArr.slice(-1)==2 || matchArr.slice(-1)==-2){
                             matchArr.push(0);
                         }
-                        console.log('finalArr',matchArr);
+                        //console.log('finalArr',matchArr);
                         await this.findByIdAndUpdate(roundId,{
                                         $set:{
                                             "matchArr":matchArr
@@ -716,15 +728,15 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
                     else if(rowId>8 && rowId<=17){
                         //playing back9
-                        console.log('topGr won & playing back9');
+                        //console.log('topGr won & playing back9');
                         matchArr=matchArr.map((el)=>{
                             return el+1;
                         })
-                        console.log('matchArr',matchArr);
+                        //console.log('matchArr',matchArr);
                         if(matchArr.slice(-1)==2 || matchArr.slice(-1)==-2){
                             matchArr.push(0);
                         }
-                        console.log('finalArr',matchArr);
+                        //console.log('finalArr',matchArr);
                         if(rowId==9){
                             //means exact on 10th hole
                             await this.findByIdAndUpdate(roundId,{
@@ -740,7 +752,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                             backArr=backArr.map((el)=>{
                             return el+1;
                              })
-                            console.log('backArr',backArr);
+                            //console.log('backArr',backArr);
                             if(backArr.slice(-1)==2 || backArr.slice(-1)==-2){
                                 backArr.push(0);
                             }
@@ -766,13 +778,14 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
 
         else if(holeResult==3){
-                console.log('holeWon by bottomGr..')
+                //console.log('holeWon by bottomGr..')
                 //hole won by topGroup
                 if(upBy[0].bgUpBy==1 && firstTimeWonBy==3){
                      //topGr won for first time
-                     console.log('bottom won for 1st time..')
+                     //console.log('bottom won for 1st time..')
                      await this.updateOne({
-                         scheduledMatchId:scheduledMatchId
+                         scheduledMatchId:scheduledMatchId,
+                         _id:roundId
                      },{
                                     $set:{
                                         "matchArr":defaultArr
@@ -780,18 +793,18 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                                 })
                 }else{
                     //after firstTime won
-                    console.log('secondWin bottomGr');
+                    //console.log('secondWin bottomGr');
                     if(rowId<=8){
                         //playing front9
                         //adding 1 to all arr elements
                         matchArr=matchArr.map((el)=>{
                             return el-1;
                         })
-                        console.log('matchArr',matchArr);
+                        //console.log('matchArr',matchArr);
                         if(matchArr.slice(-1)==2 || matchArr.slice(-1)==-2){
                             matchArr.push(0);
                         }
-                        console.log('finalArr',matchArr);
+                        //console.log('finalArr',matchArr);
                         await this.findByIdAndUpdate(roundId,{
                                         $set:{
                                             "matchArr":matchArr
@@ -803,15 +816,15 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
                     else if(rowId>8 && rowId<=17){
                         //playing back9
-                        console.log('bottomGr won & playing back9');
+                        //console.log('bottomGr won & playing back9');
                         matchArr=matchArr.map((el)=>{
                             return el-1;
                         })
-                        console.log('matchArr',matchArr);
+                        //console.log('matchArr',matchArr);
                         if(matchArr.slice(-1)==2 || matchArr.slice(-1)==-2){
                             matchArr.push(0);
                         }
-                        console.log('finalArr',matchArr);
+                        //console.log('finalArr',matchArr);
                         if(rowId==9){
                             //means exact on 10th hole
                             await this.findByIdAndUpdate(roundId,{
@@ -827,7 +840,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
                             backArr=backArr.map((el)=>{
                             return el-1;
                              })
-                            console.log('backArr',backArr);
+                            //console.log('backArr',backArr);
                             if(backArr.slice(-1)==2 || backArr.slice(-1)==-2){
                                 backArr.push(0);
                             }
@@ -853,7 +866,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
         else if(holeResult==1){
                 //hole was halved
-                console.log('hole is halved..')
+                //console.log('hole is halved..')
                 if(rowId<=8){
                     await this.findByIdAndUpdate(roundId,{
                                         $set:{
