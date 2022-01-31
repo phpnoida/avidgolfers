@@ -150,14 +150,29 @@ const editUpcomingMatch =async(req,res)=>{
     console.log('update particular match..');
     const matchId=req.params.matchId;
     const data=await scheduleMatch.findByIdAndUpdate(matchId,req.body,{new:true});
+    const matchExpiry=(data.matchDate)+21600;
+    await scheduleMatch.findByIdAndUpdate(matchId,{
+        $set:{
+            "matchExpiry":matchExpiry
+        }
+    });
     if(data){
         /*
         ToDo:send pushNoti about updated details
         */
-       res.status(200).json({
+        const d=moment.unix(data.matchDate).format("Do MMM");
+        const t=moment.unix(data.matchDate).format("hh:mm A");
+        const title='The Avid Golfer';
+        const body=`Golf Game has been re-scheduled to the ${d} at ${t}.`;
+        for(let el of data.players){
+            
+            await sendNotification(el.playerId._id,title,body,1);
+
+        }
+        res.status(200).json({
            status:true,
-           message:'match updated'
-       })
+           message:'Match updated'
+        })
     }
 }
 
