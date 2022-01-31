@@ -4,6 +4,10 @@ const moment=require('moment');
 
 const addMatch = async(req,res)=>{
     console.log('add newMatch..');
+
+    //adding 6hrs of expiry
+    req.body.matchExpiry=(req.body.matchDate)*1+21600;
+    console.log('matchExpiry',req.body.matchExpiry)
     const data=await scheduleMatch.create(req.body);
     const message=`Congratulations!
 
@@ -47,7 +51,7 @@ const getMyUpcomingMatches=async(req,res)=>{
     const loggedInUserId=req.params.userId;
     //show only those matches which has not been started yet
     const custom_query=scheduleMatch.find({
-        matchDate:{$gte:moment().unix()},
+        matchExpiry:{$gte:moment().unix()},
         matchStatus:1,
         players:{$elemMatch:{playerId:loggedInUserId}}
     }).sort({matchDate:1}).select('-__v -createdBy -groupOptions -matchStatus')

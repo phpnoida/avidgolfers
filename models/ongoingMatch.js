@@ -534,7 +534,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     const finalDiff=calDiff(finalMatchArr[0].matchArr);
     if(finalDiff>0){
         //console.log('diff is greater means topGr wins overal match');
-        const points=finalDiff*matchPoints;
+        const points=Math.abs(finalDiff*matchPoints);
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
             totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
@@ -547,13 +547,13 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             arr:finalMatchArr[0].matchArr,
             diff:finalDiff,
             wonBy:'Top Group won match',
-            points:points,
-            totalPoints:totalPoints
+            points:Math.abs(points),
+            totalPoints:Math.abs(totalPoints)
         }
     }
     else if(finalDiff<0){
         //console.log('diff is less means bottomGr wins overal match');
-        const points=finalDiff*matchPoints;
+        const points=Math.abs(finalDiff*matchPoints);
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
             totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
@@ -566,7 +566,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             diff:Math.abs(finalDiff),
             wonBy:'Bottom Group won match',
             points:Math.abs(points),
-            totalPoints:totalPoints
+            totalPoints:Math.abs(totalPoints)//changed
         }
 
     }

@@ -41,7 +41,10 @@ const scheduleMatchSchema = new mongoose.Schema({
         type:Number,
         default:1,//1->scheduled 2->started 3->completed/past 4->friends
     },
-    matchResult:Object
+    matchResult:Object,
+    matchExpiry:{
+        type:Number
+    }
 },{timestamps:true});
 
 const scheduleMatch=mongoose.model('scheduleMatch',scheduleMatchSchema);
