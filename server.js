@@ -1,3 +1,6 @@
+const env=require('dotenv');
+env.config();
+
 const connectDB=require('./database');
 connectDB();
 

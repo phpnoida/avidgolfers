@@ -1,6 +1,7 @@
 const scheduleMatch = require('./../models/scheduleMatch');
 const Hole = require('../models/hole');
 const moment=require('moment');
+const {sendNotification}=require('./../common/sendPushnotification');
 
 const addMatch = async(req,res)=>{
     console.log('add newMatch..');
@@ -37,6 +38,18 @@ const addMatch = async(req,res)=>{
     /*
     ToDo:Send pushNotifications
     */
+   const d=moment.unix(matchDate).format("Do MMM");
+   const t=moment.unix(matchDate).format("hh:mm A");
+   const title='The Avid Golfer';
+   const createdByName=players.find((el)=>{
+       return el.playerId._id.toString()===req.body.createdBy.toString();
+   })
+   const body=`A new Golf Game has been Scheduled for you by ${createdByName.playerId.firstName}, on the ${d} at ${t}.`
+   for(let el of players){
+       
+       await sendNotification(el.playerId._id,title,body,1);
+
+   }
     if(data){
         res.status(201).json({
             status:true,

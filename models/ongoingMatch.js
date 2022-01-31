@@ -891,6 +891,195 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 }
 
 
+ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId){
+    console.log('roundId',roundId);
+    const resultObj={};
+    const score=await this.findById(roundId).select('matchArr scoringDetails');
+    const {scoringDetails}=score;
+    const backPoints=scoringDetails.back;
+    const frontPoints=scoringDetails.front;
+    const matchPoints=scoringDetails.match;
+
+    const calDiff=(arr)=>{
+        let positiveCount=0;
+        let negativeCount=0;
+        for(let el of arr){
+            if(el>0){
+                positiveCount++;
+            }
+            else if(el<0){
+                negativeCount++;
+            }
+        }
+        return positiveCount-negativeCount;
+
+    };
+
+    
+    //how much rounds has been played
+    const data=await this.find({
+            scheduledMatchId:scheduledMatchId,
+            holeResult:{$in:[1,2,3]}
+    })
+
+    console.log('length',data.length);
+
+    //checking is 9thRoundPlayed or not
+    const scoreF=await this.findOne({
+        scheduledMatchId:scheduledMatchId,
+    }).select('matchArr backNineArr').skip(8).limit(1);
+
+    const lastData=await this.findOne({
+        scheduledMatchId:scheduledMatchId,
+    }).select('matchArr backNineArr').skip(data.length-1).limit(1);
+    
+    let diff;
+    if(scoreF){
+        console.log('9thholewasplayed..')
+        diff=calDiff(scoreF.matchArr);
+
+    }else{
+        console.log('matchwasendedbefore9thround..')
+        diff=calDiff(lastData.matchArr);
+
+    }
+
+    if(diff>0){
+        //console.log('diff is greater means topGr wins front9');
+        const points=diff*frontPoints;
+        
+        resultObj.pointsFront={
+            arr:scoreF.matchArr,
+            diff:diff,
+            wonBy:'Top Group won front9',
+            points:points
+        }
+    }
+    else if(diff<0){
+        //console.log('diff is less means bottomGr wins front9');
+        const points=diff*frontPoints;
+        
+        resultObj.pointsFront={
+            arr:scoreF.matchArr,
+            diff:Math.abs(diff),
+            wonBy:'Bottom Group won front9',
+            points:Math.abs(points)
+        }
+
+    }
+
+    else if(diff==0){
+        //console.log('diff is 0 means front9 is halved');
+        
+        resultObj.pointsFront={
+            arr:scoreF.matchArr,
+            diff:0,
+            wonBy:'No Group won front9',
+            points:0
+        }
+    }
+    
+    //processing back9
+    if(data.length>9){
+        let diff=calDiff(lastData.backNineArr);
+        if(diff>0){
+            //console.log('diff is greater means topGr wins back9');
+            const points=diff*backPoints;
+            
+            resultObj.pointsBack={
+                arr:lastData.backNineArr,
+                diff:diff,
+                wonBy:'Top Group won back9',
+                points:points
+            }
+        }
+        else if(diff<0){
+            //console.log('diff is less means bottomGr wins back9');
+            const points=diff*backPoints;
+            
+            resultObj.pointsBack={
+                arr:lastData.backNineArr,
+                diff:Math.abs(diff),
+                wonBy:'Bottom Group won back9',
+                points:Math.abs(points)
+            }
+
+        }
+
+        else if(diff==0){
+            //console.log('diff is 0 means back9 is halved');
+            
+            resultObj.pointsBack={
+                arr:lastData.backNineArr,
+                diff:0,
+                wonBy:'No Group won back9',
+                points:0
+            }
+        }
+
+    }//end of back9processing if
+
+    //finalMatch process
+    const finalDiff=calDiff(lastData.matchArr);
+    if(finalDiff>0){
+        //console.log('diff is greater means topGr wins overal match');
+        const points=Math.abs(finalDiff*matchPoints);
+        let totalPoints;
+        if(resultObj.pointsBack!==undefined){
+            totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
+        }else{
+            totalPoints=points+resultObj.pointsFront.points;
+        }
+        
+        
+        resultObj.wonBy={
+            arr:lastData.matchArr,
+            diff:finalDiff,
+            wonBy:'Top Group won match',
+            points:Math.abs(points),
+            totalPoints:Math.abs(totalPoints)
+        }
+    }
+    else if(finalDiff<0){
+        //console.log('diff is less means bottomGr wins overal match');
+        const points=Math.abs(finalDiff*matchPoints);
+        let totalPoints;
+        if(resultObj.pointsBack!==undefined){
+            totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
+        }else{
+            totalPoints=points+resultObj.pointsFront.points;
+        }
+        
+        resultObj.wonBy={
+            arr:lastData.matchArr,
+            diff:Math.abs(finalDiff),
+            wonBy:'Bottom Group won match',
+            points:Math.abs(points),
+            totalPoints:Math.abs(totalPoints)//changed
+        }
+
+    }
+
+    else if(finalDiff==0){
+        //console.log('diff is 0 means overall match is halved');
+        
+        resultObj.wonBy={
+            arr:lastData.matchArr,
+            diff:0,
+            wonBy:'No Group won the match',
+            points:0,
+            totalPoints:0
+        }
+    }
+
+    return resultObj;
+
+    
+    
+
+}
+
+
 const ongoingMatch=mongoose.model('ongoingMatch',ongoingMatchSchema)
 
 module.exports=ongoingMatch;
