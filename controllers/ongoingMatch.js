@@ -551,18 +551,18 @@ const canStartMatch=async(req,res,next)=>{
 
 //endMatch Early
 const endMatchEarly=async(req,res,next)=>{
-    console.log('endMatch Early..');
+    //console.log('endMatch Early..');
     const {scoringFormat,scheduledMatchId,roundId}=req.body;
     //return console.log(scoringFormat,scheduledMatchId);
     let finalMatchResult;
     if(scoringFormat==2){
-      console.log('finalResult for matchPlay');
+      //console.log('finalResult for matchPlay');
       finalMatchResult=await ongoingMatch.endAutoEarly(roundId,scheduledMatchId)
 
     }
 
     else if(scoringFormat==1){
-        console.log('finalResult for autoPress');
+        //console.log('finalResult for autoPress');
         finalMatchResult=await ongoingMatch.endAutoEarly(roundId,scheduledMatchId);
 
     }

@@ -449,7 +449,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             arr:scoreF.matchArr,
             diff:Math.abs(diff),
             wonBy:'Bottom Group won front9',
-            points:Math.abs(points)
+            points:points
         }
 
     }
@@ -502,7 +502,7 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
                 arr:backNineArr,
                 diff:Math.abs(diff),
                 wonBy:'Bottom Group won back9',
-                points:Math.abs(points)
+                points:points
             }
 
         }
@@ -534,10 +534,10 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
     const finalDiff=calDiff(finalMatchArr[0].matchArr);
     if(finalDiff>0){
         //console.log('diff is greater means topGr wins overal match');
-        const points=Math.abs(finalDiff*matchPoints);
+        const points=finalDiff*matchPoints;
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
-            totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
+            totalPoints=points+resultObj.pointsFront.points+resultObj.pointsBack.points;
         }else{
             totalPoints=points+resultObj.pointsFront.points;
         }
@@ -547,16 +547,16 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             arr:finalMatchArr[0].matchArr,
             diff:finalDiff,
             wonBy:'Top Group won match',
-            points:Math.abs(points),
-            totalPoints:Math.abs(totalPoints)
+            points:points,
+            totalPoints:totalPoints
         }
     }
     else if(finalDiff<0){
         //console.log('diff is less means bottomGr wins overal match');
-        const points=Math.abs(finalDiff*matchPoints);
+        const points=finalDiff*matchPoints;
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
-            totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
+            totalPoints=points+resultObj.pointsBack.points+resultObj.pointsFront.points;
         }else{
             totalPoints=points+resultObj.pointsFront.points;
         }
@@ -565,8 +565,8 @@ ongoingMatchSchema.statics.calFinalResultAuto=async function(scheduledMatchId){
             arr:finalMatchArr[0].matchArr,
             diff:Math.abs(finalDiff),
             wonBy:'Bottom Group won match',
-            points:Math.abs(points),
-            totalPoints:Math.abs(totalPoints)//changed
+            points:points,
+            totalPoints:totalPoints//changed
         }
 
     }
@@ -892,7 +892,7 @@ ongoingMatchSchema.statics.autoPress=async function(holeResult,firstWin,schedule
 
 
 ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId){
-    console.log('roundId',roundId);
+    //console.log('roundId',roundId);
     const resultObj={};
     const score=await this.findById(roundId).select('matchArr scoringDetails');
     const {scoringDetails}=score;
@@ -922,24 +922,37 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
             holeResult:{$in:[1,2,3]}
     })
 
-    console.log('length',data.length);
+    //console.log('length',data.length);
 
     //checking is 9thRoundPlayed or not
+    
     const scoreF=await this.findOne({
         scheduledMatchId:scheduledMatchId,
     }).select('matchArr backNineArr').skip(8).limit(1);
 
-    const lastData=await this.findOne({
-        scheduledMatchId:scheduledMatchId,
-    }).select('matchArr backNineArr').skip(data.length-1).limit(1);
+    let lastData;
+
+    if(data.length==0){
+        //means matchis being ended on 1st round
+        lastData=await this.findOne({
+                    scheduledMatchId:scheduledMatchId,
+                   }).select('matchArr backNineArr');
+
+    }else{
+       lastData=await this.findOne({
+                    scheduledMatchId:scheduledMatchId,
+                   }).select('matchArr backNineArr').skip(data.length-1).limit(1);
+    }
+
+    
     
     let diff;
     if(scoreF){
-        console.log('9thholewasplayed..')
+        //console.log('9thholewasplayed..')
         diff=calDiff(scoreF.matchArr);
 
     }else{
-        console.log('matchwasendedbefore9thround..')
+        //console.log('matchwasendedbefore9thround..')
         diff=calDiff(lastData.matchArr);
 
     }
@@ -963,7 +976,7 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
             arr:scoreF.matchArr,
             diff:Math.abs(diff),
             wonBy:'Bottom Group won front9',
-            points:Math.abs(points)
+            points:points
         }
 
     }
@@ -1001,7 +1014,7 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
                 arr:lastData.backNineArr,
                 diff:Math.abs(diff),
                 wonBy:'Bottom Group won back9',
-                points:Math.abs(points)
+                points:points
             }
 
         }
@@ -1023,10 +1036,10 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
     const finalDiff=calDiff(lastData.matchArr);
     if(finalDiff>0){
         //console.log('diff is greater means topGr wins overal match');
-        const points=Math.abs(finalDiff*matchPoints);
+        const points=finalDiff*matchPoints;
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
-            totalPoints=points+resultObj.pointsFront.points-resultObj.pointsBack.points;
+            totalPoints=points+resultObj.pointsFront.points+resultObj.pointsBack.points;
         }else{
             totalPoints=points+resultObj.pointsFront.points;
         }
@@ -1036,16 +1049,16 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
             arr:lastData.matchArr,
             diff:finalDiff,
             wonBy:'Top Group won match',
-            points:Math.abs(points),
-            totalPoints:Math.abs(totalPoints)
+            points:points,
+            totalPoints:totalPoints
         }
     }
     else if(finalDiff<0){
         //console.log('diff is less means bottomGr wins overal match');
-        const points=Math.abs(finalDiff*matchPoints);
+        const points=finalDiff*matchPoints;
         let totalPoints;
         if(resultObj.pointsBack!==undefined){
-            totalPoints=points+resultObj.pointsBack.points-resultObj.pointsFront.points;
+            totalPoints=points+resultObj.pointsBack.points+resultObj.pointsFront.points;
         }else{
             totalPoints=points+resultObj.pointsFront.points;
         }
@@ -1054,8 +1067,8 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
             arr:lastData.matchArr,
             diff:Math.abs(finalDiff),
             wonBy:'Bottom Group won match',
-            points:Math.abs(points),
-            totalPoints:Math.abs(totalPoints)//changed
+            points:points,
+            totalPoints:totalPoints//changed
         }
 
     }
