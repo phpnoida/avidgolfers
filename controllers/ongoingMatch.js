@@ -106,6 +106,12 @@ const startMatch=async(req,res)=>{
             playerObj.downIn=par;
             const net=Number(par)+Number(finalStokeValue);
             playerObj.net=net;
+            const score=net-par;
+            playerObj.score=score;
+            playerObj.downInSum=par;
+            playerObj.netSum=net;
+            playerObj.scoreSum=score
+            
             finalPlayer.push(playerObj);
             
         }//end for playersLoop
@@ -207,6 +213,7 @@ const roundDetails =async(roundId)=>{
        resData.fontNine=score.matchArr;
 
    }
+
    
    
     //final resData
@@ -264,12 +271,12 @@ const recordScore=async(req,res)=>{
     by groupOptions seqId
     */
     const groupOptionsData=await ongoingMatch.findById(roundId)
-                              .select('scheduledMatchId')
+                              .select('scheduledMatchId par')
                               .populate({
                                   path:'scheduledMatchId',
                                   select:'groupOptions'
                               });
-    const {scheduledMatchId}=groupOptionsData;
+    const {scheduledMatchId,par}=groupOptionsData;
     const {groupOptions}=scheduledMatchId;
     const groupId=groupOptions;
     const {seqId}=await matchFormat.findById(groupId).select('seqId');
@@ -285,6 +292,8 @@ const recordScore=async(req,res)=>{
     let topGrMinScore;
     let bottGrMinScore;
 
+    //console.log('par--->',par)
+
 
     //update downIn and net of each players
     for(let score of scores){
@@ -294,12 +303,11 @@ const recordScore=async(req,res)=>{
     },{
         $set:{
             "players.$.downIn":score.downIn,
-            "players.$.net":score.net
+            "players.$.net":score.net,
+            "players.$.score":score.net-par
         }
     })
     }//end of loop
-
-
 
     //logic for roundsResult
     const {players,scoringFormat,scoringDetails}=await ongoingMatch.findById(roundId);
@@ -404,6 +412,13 @@ const recordScore=async(req,res)=>{
         backNineArr1=backNineArr;
     }
 
+    let strokePlayData=[];
+    if(scoringFormat==3){
+        console.log('strokePlay is being played..')
+        const strokePlay=await ongoingMatch.strokePlay(roundId,scheduledMatchId._id);
+        strokePlayData=[...strokePlay];
+    }
+
 
 
 
@@ -424,8 +439,9 @@ const recordScore=async(req,res)=>{
                isLastRound:false,
                matchArrLast:matchArr1,
                backNineArrLast:backNineArr1,
+               strokePlayData:strokePlayData,
                data:nextRoundData
-            })
+            });
 
         }
     }//end of if
@@ -441,6 +457,11 @@ const recordScore=async(req,res)=>{
         //console.log('finalResult for autoPress');
         finalMatchResult=await ongoingMatch.calFinalResultAuto(scheduledMatchId._id);
 
+    }
+
+    else if(scoringFormat==3){
+        finalMatchResult=await ongoingMatch.calFinalResultStroke(scheduledMatchId._id,groupOptionsSeqId)
+        
     }
 
     

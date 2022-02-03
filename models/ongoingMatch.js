@@ -61,6 +61,23 @@ const ongoingMatchSchema=new mongoose.Schema({
               type:Number,
              
           },
+          //backend score=net-par
+          score:{
+              type:Number
+          },
+          //backend
+          downInSum:{
+              type:Number,
+              
+          },
+          //backend
+          netSum:{
+              type:Number
+          },
+          //backend
+          scoreSum:{
+              type:Number
+          }
 
         }
     ],
@@ -90,19 +107,26 @@ const ongoingMatchSchema=new mongoose.Schema({
     },
     scoringDetails:{
         front:{
-            type:Number
+            type:Number,
+            default:0
         },
         back:{
             type:Number,
             default:0
         },
         match:{
-            type:Number
+            type:Number,
+             default:0
         },
         //will be used in autoPress
         firstWin:{
             type:Number,
             default:0 //21->[0,2,0] ,31->[1,1,1] ,51->[1,1,1,1,1]
+        },
+        //will be used in strokePlay
+        pointsPerStroke:{
+            type:Number,
+            default:0
         }
     },
     editingRights:{
@@ -1090,6 +1114,139 @@ ongoingMatchSchema.statics.endAutoEarly=async function(roundId,scheduledMatchId)
     
     
 
+}
+
+ongoingMatchSchema.statics.strokePlay=async function(roundId,scheduledMatchId){
+    //console.log('strokePlay model-->',roundId,scheduledMatchId);
+    
+    const data1=await this.aggregate([
+        {$match:{
+            scheduledMatchId:scheduledMatchId,
+            holeResult:{$in:[1,2,3]}
+
+        }},
+        {$unwind:"$players"},
+        {$group:{
+            "_id":"$players.playerId",
+            "item": { $first: '$$ROOT.players' },
+            "downInSum":{$sum:"$players.downIn"},
+            "netSum":{$sum:"$players.net"},
+            "scoreSum":{$sum:"$players.score"}
+        }}
+    ]);
+    
+    //console.log('data1-->',data1)
+    //update summation of each players
+    for(let data of data1){
+        //console.log('oop-->',typeof(data._id),data._id,data.downInSum)
+        
+        await this.findOneAndUpdate({
+        _id:roundId,
+        "players":{$elemMatch:{"playerId":data._id}}
+        },{
+            $set:{
+                "players.$.downInSum":data.downInSum,
+                "players.$.netSum":data.netSum,
+                "players.$.scoreSum":data.scoreSum
+            }
+        })
+
+    }//end of loop
+
+    return data1;
+}
+
+ongoingMatchSchema.statics.calFinalResultStroke=async function(scheduledMatchId,groupOptionsSeqId){
+    //console.log('final result strokePlay..',groupOptionsSeqId);
+    const resultObj={};
+    const data=await this.find({
+        scheduledMatchId:scheduledMatchId
+    }).select('players scoringDetails');
+
+    
+
+    
+
+    //getting lastround value
+    const data1=data.slice(-1);
+    
+    resultObj.players=data1[0].players;
+    
+    
+    //deciding top&bottom teams based on groupSeqId
+    const topGr=[];
+    const bottGr=[];
+
+    //logic for [2vs2]
+    if(groupOptionsSeqId==1){
+        //console.log('inside if1')
+        for(let player of data1[0].players){
+            if(player.playerSeqId==1 ||player.playerSeqId==2 ){
+                topGr.push(player.scoreSum)
+
+            }else{
+                    bottGr.push(player.scoreSum)
+                }
+
+        }//loop end
+
+    }
+
+    //logic for [1vs1]
+    if(groupOptionsSeqId==2){
+        //console.log('inside if2')
+        for(let player of data1[0].players){
+            if(player.playerSeqId==1){
+                topGr.push(player.scoreSum)
+
+            }else{
+                    bottGr.push(player.scoreSum)
+                }
+
+        }//loop end
+
+    }
+   
+   //sum of topGr scoreSum
+   const topGrSum=topGr.reduce((acc,cr)=>{
+       return acc+cr;
+   },0)
+   
+   //sum of bottGr scoreSum
+   const bottGrSum=bottGr.reduce((acc,cr)=>{
+       return acc+cr;
+   },0)
+
+   //console.log('summation',topGrSum,bottGrSum);
+   const diff=topGrSum-bottGrSum;
+   const points=(diff)*(data1[0].scoringDetails.pointsPerStroke);
+   if(diff<0){
+       //console.log('diff',diff,'topGr Wins',resultObj);
+       resultObj.wonBy={
+           message:`Top Group won the match by ${Math.abs(diff)} strokes`,
+           points:Math.abs(points)
+       }
+
+       
+   }
+
+   else if(diff>0){
+       //console.log('diff',diff,'bottGr Wins',resultObj);
+       resultObj.wonBy={
+           message:`Bottom Group won the match by ${Math.abs(diff)} strokes`,
+           points:Math.abs(points)
+       }
+   }
+
+   else if(diff==0){
+       //console.log('diff',diff,'No Gr Wins',resultObj);
+       resultObj.wonBy={
+           message:`No Group won the match.`,
+           points:0
+       }
+   }
+
+   return resultObj;
 }
 
 
