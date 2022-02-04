@@ -3,6 +3,7 @@ const Hole=require('./../models/hole');
 const Course=require('./../models/course');
 const scheduleMatch=require('./../models/scheduleMatch');
 const matchFormat=require('./../models/matchFormat');
+const User=require('./../models/user');
 
 const startMatch=async(req,res)=>{
     //console.log('startMatch..');
@@ -401,10 +402,15 @@ const recordScore=async(req,res)=>{
     //console.log('points',points);
     //console.log('scoringFormat',scoringFormat);
     //console.log('scoringDetails',scoringDetails)
+
+    if(scoringFormat==2){
+        await ongoingMatch.strokePlay(roundId,scheduledMatchId._id);
+    }
     let matchArr1=[];//will be used to send in response
     let backNineArr1=[];//will be used to send in response
     if(scoringFormat==1){
         //console.log('autoPress is being played..');
+        await ongoingMatch.strokePlay(roundId,scheduledMatchId._id);
         const {firstWin}=scoringDetails;
         const autoPress=await ongoingMatch.autoPress(holeResult,firstWin,scheduledMatchId._id,roundId);
         const {matchArr,backNineArr}=await ongoingMatch.findById(roundId).select('matchArr backNineArr');
@@ -611,7 +617,56 @@ const endMatchEarly=async(req,res,next)=>{
 
 }
 
+//lists of my pastMatches
+const pastMatches = async(req,res,next)=>{
+    //console.log('my pastMatches..');
+    const userId=req.params.userId;
+    //console.log('userId-->',userId);
 
+    //get my all matches whose status is 3 or 4
+    const matches = scheduleMatch.find({
+        matchStatus:{$in:[3,4]},
+        players:{$elemMatch:{playerId:userId}}
+    }).populate({
+        path:'courseId',
+        select:'courseName'
+
+    }).populate({
+        path:'groupOptions',
+        select:'name seqId'
+
+    }).populate({
+        path:'details',
+        select:'players holeNo par holeResult scoringFormat scoringDetails',
+        populate:{
+            path:'players.playerId',
+            select:'firstName lastName'
+        }
+        //select:'players holeNo holeResult scoringFormat scoringDetails'
+    })
+    .select('-players -createdAt -updatedAt -matchExpiry -createdBy')
+    .sort({'matchDate':-1});
+
+    //pagination
+    const page =req.query.page*1||1;//default will be pageNo 1
+    const limit = req.query.limit*1||2;//default will be 10 rec/page
+    const skip = (page-1)*limit;
+
+    const data=await matches.skip(skip).limit(limit);
+
+
+
+    if(data){
+        res.status(200).json({
+        status:true,
+        totalRec:data.length,
+        data:data
+        })
+
+    }
+    
+
+}
 
 
 
@@ -622,5 +677,6 @@ module.exports={
     getAllRounds,
     myOngoingMatch,
     canStartMatch,
-    endMatchEarly
+    endMatchEarly,
+    pastMatches
 };

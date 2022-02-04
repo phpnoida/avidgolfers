@@ -1220,11 +1220,13 @@ ongoingMatchSchema.statics.calFinalResultStroke=async function(scheduledMatchId,
    //console.log('summation',topGrSum,bottGrSum);
    const diff=topGrSum-bottGrSum;
    const points=(diff)*(data1[0].scoringDetails.pointsPerStroke);
+   const calStructure=`${Math.abs(diff)}*points`;
    if(diff<0){
        //console.log('diff',diff,'topGr Wins',resultObj);
        resultObj.wonBy={
            message:`Top Group won the match by ${Math.abs(diff)} strokes`,
-           points:Math.abs(points)
+           points:Math.abs(points),
+           calStructure
        }
 
        
@@ -1234,7 +1236,8 @@ ongoingMatchSchema.statics.calFinalResultStroke=async function(scheduledMatchId,
        //console.log('diff',diff,'bottGr Wins',resultObj);
        resultObj.wonBy={
            message:`Bottom Group won the match by ${Math.abs(diff)} strokes`,
-           points:Math.abs(points)
+           points:Math.abs(points),
+           calStructure
        }
    }
 
@@ -1242,7 +1245,8 @@ ongoingMatchSchema.statics.calFinalResultStroke=async function(scheduledMatchId,
        //console.log('diff',diff,'No Gr Wins',resultObj);
        resultObj.wonBy={
            message:`No Group won the match.`,
-           points:0
+           points:0,
+           calStructure:0
        }
    }
 

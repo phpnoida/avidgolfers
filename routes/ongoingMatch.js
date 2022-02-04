@@ -6,7 +6,8 @@ const {
     getAllRounds,
     myOngoingMatch,
     canStartMatch,
-    endMatchEarly
+    endMatchEarly,
+    pastMatches
 }=require('./../controllers/ongoingMatch');
 
 const router=express.Router();
@@ -22,5 +23,8 @@ router.route('/endMatchEarly').post(endMatchEarly);
 
 //ongoing
 router.route('/ongoingMatch/:userId').get(myOngoingMatch);
+
+//pastMatches
+router.route('/getPastMatchesFor/:userId').get(pastMatches);
 
 module.exports=router;

@@ -45,7 +45,18 @@ const scheduleMatchSchema = new mongoose.Schema({
     matchExpiry:{
         type:Number
     }
-},{timestamps:true});
+},{
+    toJSON:{virtuals:true},
+    toObject:{virtuals:true},
+    timestamps:true});
+
+scheduleMatchSchema.virtual('details',{
+    localField:'_id',
+    foreignField:'scheduledMatchId',
+    ref:'ongoingMatch'
+})
+
+
 
 const scheduleMatch=mongoose.model('scheduleMatch',scheduleMatchSchema);
 
