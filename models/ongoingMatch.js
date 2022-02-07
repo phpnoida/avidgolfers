@@ -1161,7 +1161,7 @@ ongoingMatchSchema.statics.calFinalResultStroke=async function(scheduledMatchId,
     const resultObj={};
     const data=await this.find({
         scheduledMatchId:scheduledMatchId
-    }).select('players scoringDetails');
+    }).select('players scoringDetails')
 
     
 
