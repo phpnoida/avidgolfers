@@ -7,7 +7,8 @@ const {
     myOngoingMatch,
     canStartMatch,
     endMatchEarly,
-    pastMatches
+    pastMatches,
+    deleteOngoingMatch
 }=require('./../controllers/ongoingMatch');
 
 const router=express.Router();
@@ -26,5 +27,8 @@ router.route('/ongoingMatch/:userId').get(myOngoingMatch);
 
 //pastMatches
 router.route('/getPastMatchesFor/:userId').get(pastMatches);
+
+//delete my ongoingMatch
+router.route('/deleteOngoingMatch/:matchId').delete(deleteOngoingMatch);
 
 module.exports=router;

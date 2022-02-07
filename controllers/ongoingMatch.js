@@ -3,7 +3,7 @@ const Hole=require('./../models/hole');
 const Course=require('./../models/course');
 const scheduleMatch=require('./../models/scheduleMatch');
 const matchFormat=require('./../models/matchFormat');
-const User=require('./../models/user');
+
 
 const startMatch=async(req,res)=>{
     //console.log('startMatch..');
@@ -579,7 +579,7 @@ const canStartMatch=async(req,res,next)=>{
 //endMatch Early
 const endMatchEarly=async(req,res,next)=>{
     //console.log('endMatch Early..');
-    const {scoringFormat,scheduledMatchId,roundId}=req.body;
+    const {scoringFormat,scheduledMatchId,roundId,groupOptionsSeqId}=req.body;
     //return console.log(scoringFormat,scheduledMatchId);
     let finalMatchResult;
     if(scoringFormat==2){
@@ -591,6 +591,12 @@ const endMatchEarly=async(req,res,next)=>{
     else if(scoringFormat==1){
         //console.log('finalResult for autoPress');
         finalMatchResult=await ongoingMatch.endAutoEarly(roundId,scheduledMatchId);
+
+    }
+
+    else if(scoringFormat==3){
+        console.log('finalResult for strokePlay',scheduledMatchId,groupOptionsSeqId);
+        finalMatchResult=await ongoingMatch.calFinalResultStroke(scheduledMatchId,groupOptionsSeqId)
 
     }
     
@@ -617,6 +623,39 @@ const endMatchEarly=async(req,res,next)=>{
 
 }
 
+
+//abort or delete my ongoingMatch
+const deleteOngoingMatch=async(req,res,next)=>{
+    console.log('delete my ongoingMatch..');
+    const scheduledMatchId=req.params.matchId;
+    console.log('scheduledMatchId-->',scheduledMatchId);
+    //first delete records from ongoingMatch model
+    await ongoingMatch.deleteMany({
+        scheduledMatchId:scheduledMatchId
+    })
+
+    //second delete records from scheduledMatch model
+    const data=await scheduleMatch.findByIdAndDelete(scheduledMatchId);
+    if(data==null){
+        return res.status(400).json({
+            status:false,
+            message:'Invalid matchId'
+        })
+    }
+
+    res.status(200).json({
+        status:true,
+        message:'Ongoing Match Deleted'
+    })
+
+}
+
+
+
+
+
+
+
 //lists of my pastMatches
 const pastMatches = async(req,res,next)=>{
     //console.log('my pastMatches..');
@@ -640,7 +679,7 @@ const pastMatches = async(req,res,next)=>{
         select:'players holeNo par holeResult scoringFormat scoringDetails',
         populate:{
             path:'players.playerId',
-            select:'firstName lastName'
+            select:'firstName lastName profileImg'
         }
         //select:'players holeNo holeResult scoringFormat scoringDetails'
     })
@@ -649,7 +688,7 @@ const pastMatches = async(req,res,next)=>{
 
     //pagination
     const page =req.query.page*1||1;//default will be pageNo 1
-    const limit = req.query.limit*1||2;//default will be 10 rec/page
+    const limit = req.query.limit*1||4;//default will be 10 rec/page
     const skip = (page-1)*limit;
 
     const data=await matches.skip(skip).limit(limit);
@@ -670,6 +709,8 @@ const pastMatches = async(req,res,next)=>{
 
 
 
+
+
 module.exports={
     startMatch,
     getRoundDetails,
@@ -678,5 +719,6 @@ module.exports={
     myOngoingMatch,
     canStartMatch,
     endMatchEarly,
-    pastMatches
+    pastMatches,
+    deleteOngoingMatch
 };

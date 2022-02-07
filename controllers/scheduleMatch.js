@@ -176,10 +176,29 @@ const editUpcomingMatch =async(req,res)=>{
     }
 }
 
+//delete scheduledMatch
+const deleteScheduledMatch=async(req,res,next)=>{
+    console.log('delete scheduledMatch..');
+    const scheduledMatchId=req.params.matchId;
+    console.log('scheduledMatchId-->',scheduledMatchId);
+    const data=await scheduleMatch.findByIdAndDelete(scheduledMatchId);
+    if(data==null){
+        return res.status(400).json({
+            status:false,
+            message:'invalid matchId'
+        })
+    }
+    res.status(200).json({
+        status:true,
+        message:'Deleted Successfully'
+    })
+}
+
 
 
 module.exports={addMatch,
     getMyUpcomingMatches,
     getMatchData,
-    editUpcomingMatch
+    editUpcomingMatch,
+    deleteScheduledMatch
 }
