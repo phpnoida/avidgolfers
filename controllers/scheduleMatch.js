@@ -22,11 +22,15 @@ const addMatch = async(req,res)=>{
     }).populate({
         path:'courseId',
         select:'courseName'
-    }).execPopulate();
+    }).populate({
+        path:'createdBy',
+        select:'firstName'
+    })
+    .execPopulate();
     //sending courseName,date,time,player's lists
     let resData={};
     //destructuring
-    const {courseId,matchDate,players}=finaldata;
+    const {courseId,matchDate,players,createdBy}=finaldata;
     const {courseName}=courseId;
     resData.courseName=courseName;
     players.forEach(function(v,i){
@@ -41,10 +45,8 @@ const addMatch = async(req,res)=>{
    const d=moment.unix(matchDate).format("Do MMM");
    const t=moment.unix(matchDate).format("hh:mm A");
    const title='The Avid Golfer';
-   const createdByName=players.find((el)=>{
-       return el.playerId._id.toString()===req.body.createdBy.toString();
-   })
-   const body=`A new Golf Game has been Scheduled for you by ${createdByName.playerId.firstName}, on the ${d} at ${t}.`
+   //console.log('chup',createdBy.firstName);
+   const body=`A new Golf Game has been Scheduled for you by ${createdBy.firstName}, on the ${d} at ${t}.`
    for(let el of players){
        
        await sendNotification(el.playerId._id,title,body,1);
