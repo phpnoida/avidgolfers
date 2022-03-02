@@ -1,15 +1,17 @@
 const express=require('express');
 const {
-    startMatch,
-    getRoundDetails,
-    recordScore,
-    getAllRounds,
-    myOngoingMatch,
-    canStartMatch,
-    endMatchEarly,
-    pastMatches,
-    deleteOngoingMatch
-}=require('./../controllers/ongoingMatch');
+  startMatch,
+  getRoundDetails,
+  recordScore,
+  getAllRounds,
+  myOngoingMatch,
+  canStartMatch,
+  endMatchEarly,
+  pastMatches,
+  deleteOngoingMatch,
+  getTournaments,
+  leaderBoardData
+} = require("./../controllers/ongoingMatch");
 
 const router=express.Router();
 
@@ -27,6 +29,12 @@ router.route('/ongoingMatch/:userId').get(myOngoingMatch);
 
 //pastMatches
 router.route('/getPastMatchesFor/:userId').get(pastMatches);
+
+//tournaments
+router.route("/getTournaments").get(getTournaments);
+
+//leaderBoard
+router.route('/getLeaderBoard/:groupId').get(leaderBoardData);
 
 //delete my ongoingMatch
 router.route('/deleteOngoingMatch/:matchId').delete(deleteOngoingMatch);

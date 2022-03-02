@@ -3,6 +3,8 @@ const Hole = require("./../models/hole");
 const Course = require("./../models/course");
 const scheduleMatch = require("./../models/scheduleMatch");
 const matchFormat = require("./../models/matchFormat");
+const Group = require("./../models/group");
+const mongoose = require("mongoose");
 
 const startMatch = async (req, res) => {
   //console.log('startMatch..');
@@ -322,43 +324,43 @@ const recordScore = async (req, res) => {
 
   //update downIn and net of each players
   for (let score of scores) {
-      let stabFordPointsNet;
-      let stabFordPointsGross;
-      const finalScore=score.net-par;
-      const gross = score.downIn-par;
-      //assigning SN
-      if (finalScore >= 2) {
-        stabFordPointsNet = 0;
-      } else if (finalScore == 1) {
-        stabFordPointsNet = 1;
-      } else if (finalScore == 0) {
-        stabFordPointsNet = 2;
-      } else if (finalScore == -1) {
-        stabFordPointsNet = 3;
-      } else if (finalScore == -2) {
-        stabFordPointsNet = 4;
-      } else if (finalScore == -3) {
-        stabFordPointsNet = 5;
-      } else if (finalScore <= -4) {
-        stabFordPointsNet = 6;
-      }
+    let stabFordPointsNet;
+    let stabFordPointsGross;
+    const finalScore = score.net - par;
+    const gross = score.downIn - par;
+    //assigning SN
+    if (finalScore >= 2) {
+      stabFordPointsNet = 0;
+    } else if (finalScore == 1) {
+      stabFordPointsNet = 1;
+    } else if (finalScore == 0) {
+      stabFordPointsNet = 2;
+    } else if (finalScore == -1) {
+      stabFordPointsNet = 3;
+    } else if (finalScore == -2) {
+      stabFordPointsNet = 4;
+    } else if (finalScore == -3) {
+      stabFordPointsNet = 5;
+    } else if (finalScore <= -4) {
+      stabFordPointsNet = 6;
+    }
 
-      //assigning SG
-      if (gross >= 2) {
-        stabFordPointsGross = 0;
-      } else if (gross == 1) {
-        stabFordPointsGross = 1;
-      } else if (gross == 0) {
-        stabFordPointsGross = 2;
-      } else if (gross == -1) {
-        stabFordPointsGross = 3;
-      } else if (gross == -2) {
-        stabFordPointsGross = 4;
-      } else if (gross == -3) {
-        stabFordPointsGross = 5;
-      } else if (gross <= -4) {
-        stabFordPointsGross = 6;
-      }
+    //assigning SG
+    if (gross >= 2) {
+      stabFordPointsGross = 0;
+    } else if (gross == 1) {
+      stabFordPointsGross = 1;
+    } else if (gross == 0) {
+      stabFordPointsGross = 2;
+    } else if (gross == -1) {
+      stabFordPointsGross = 3;
+    } else if (gross == -2) {
+      stabFordPointsGross = 4;
+    } else if (gross == -3) {
+      stabFordPointsGross = 5;
+    } else if (gross <= -4) {
+      stabFordPointsGross = 6;
+    }
     await ongoingMatch.findOneAndUpdate(
       {
         _id: roundId,
@@ -495,12 +497,15 @@ const recordScore = async (req, res) => {
     );
     strokePlayData = [...strokePlay];
   }
-  
+
   //stableFord
   let stableFordData = [];
   if (scoringFormat == 4) {
-    console.log('stableFord is being played...')
-    const stableFord=await ongoingMatch.strokePlay(roundId, scheduledMatchId._id)
+    console.log("stableFord is being played...");
+    const stableFord = await ongoingMatch.strokePlay(
+      roundId,
+      scheduledMatchId._id
+    );
     stableFordData = [...stableFord];
   }
 
@@ -524,10 +529,10 @@ const recordScore = async (req, res) => {
         matchArrLast: matchArr1,
         backNineArrLast: backNineArr1,
         strokePlayData: strokePlayData,
-        stableFordData:stableFordData,
+        stableFordData: stableFordData,
         data: nextRoundData,
         totalHoles: frontNineRounds.length,
-      })
+      });
     }
   } //end of if
 
@@ -545,11 +550,11 @@ const recordScore = async (req, res) => {
       scheduledMatchId._id,
       groupOptionsSeqId
     );
-  }else if(scoringFormat == 4){
-      finalMatchResult = await ongoingMatch.calFinalResultStableFord(
-        scheduledMatchId._id,
-        groupOptionsSeqId
-      );
+  } else if (scoringFormat == 4) {
+    finalMatchResult = await ongoingMatch.calFinalResultStableFord(
+      scheduledMatchId._id,
+      groupOptionsSeqId
+    );
   }
 
   /*
@@ -787,6 +792,85 @@ const pastMatches = async (req, res, next) => {
   }
 };
 
+//tournaments
+const getTournaments = async (req, res, next) => {
+  console.log("tournaments listings..");
+  const data = [
+    {
+      groupId: "621deef77549ca71370b9d28",
+      name: "YPO 10 and Under Cup",
+    },
+    {
+      groupId: "621def727549ca71370b9e25",
+      name: "YPO 11 and Over Cup",
+    },
+  ];
+  res.status(200).json({
+    status: true,
+    data: data,
+  });
+};
+
+//leadershipBoard
+const leaderBoardData = async (req, res, next) => {
+  //console.log("leaderBoard..");
+  const groupId = req.params.groupId;
+  const { users } = await Group.findById(groupId).select("users");
+  //console.log('users--->',users);
+  const resData = [];
+  for (let el of users) {
+    const obj = {};
+    const data = await ongoingMatch
+      .find(
+        {
+          players: {
+            $elemMatch: { playerId: mongoose.Types.ObjectId(el.id) },
+          },
+          holeResult: { $in: [1, 2, 3] },
+        },
+        { "players.$": 1 }
+      )
+      .populate({
+        path: "players.playerId",
+        select: "firstName lastName profileImg",
+      })
+      .select("holeNo");
+
+    const data1 = await ongoingMatch.aggregate([
+      { $unwind: "$players" },
+      { $match: { "players.playerId": mongoose.Types.ObjectId(el.id) } },
+      { $match: { holeResult: { $in: [1, 2, 3] } } },
+      {
+        $group: {
+          _id: null,
+          x: { $sum: "$players.stableFordGross" },
+          y: { $sum: "$players.stableFordNet" },
+        },
+      },
+    ]);
+
+    const finalData = data.slice(-1);
+    //console.log("check", finalData);
+    if (finalData.length != 0) {
+      obj.holeNo = finalData[0].holeNo;
+      obj.playerFirstName = `${finalData[0].players[0].playerId.firstName}`;
+      obj.playerlastName = `${finalData[0].players[0].playerId.lastName}`;
+      obj.teeName = finalData[0].players[0].teeColorCode;
+      obj.SGr = data1[0].x;
+      obj.SNet = data1[0].y;
+
+      resData.push(obj);
+    }
+  }
+  res.status(200).json({
+    status: true,
+    data: resData,
+    bannerImg: "",
+    title1: "YPO Stableford Open - RCGC, Calcutta",
+    title2: "Royal Calcutta - 10 Mar - 11 Mar,2022",
+  });
+};
+
 module.exports = {
   startMatch,
   getRoundDetails,
@@ -797,4 +881,6 @@ module.exports = {
   endMatchEarly,
   pastMatches,
   deleteOngoingMatch,
+  getTournaments,
+  leaderBoardData,
 };
