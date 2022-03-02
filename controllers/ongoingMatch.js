@@ -247,6 +247,31 @@ const roundDetails = async (roundId) => {
     resData.fontNine = score.matchArr;
   }
 
+  if (data.scoringFormat == 4) {
+    console.log("stableFord..");
+    const keywords = await ongoingMatch.aggregate([
+      {
+        $match: {
+          _id: mongoose.Types.ObjectId(roundId),
+          scheduledMatchId: data1.scheduledMatchId._id,
+          holeResult: { $in: [1, 2, 3] },
+        },
+      },
+      { $unwind: "$players" },
+      {
+        $group: {
+          _id: {
+            player: "$players.playerId",
+            score: "$players.score",
+          },
+          countScore: { $sum: 1 },
+        },
+      },
+    ]);
+
+    resData.keywords = keywords;
+  }
+
   //final resData
   resData.roundId = _id;
   resData.scheduledMatchId = data1.scheduledMatchId._id;
@@ -500,12 +525,32 @@ const recordScore = async (req, res) => {
 
   //stableFord
   let stableFordData = [];
+  let keywords;
   if (scoringFormat == 4) {
     console.log("stableFord is being played...");
+
     const stableFord = await ongoingMatch.strokePlay(
       roundId,
       scheduledMatchId._id
     );
+    keywords = await ongoingMatch.aggregate([
+      {
+        $match: {
+          scheduledMatchId: scheduledMatchId._id,
+          holeResult: { $in: [1, 2, 3] },
+        },
+      },
+      { $unwind: "$players" },
+      {
+        $group: {
+          _id: {
+            player: "$players.playerId",
+            score: "$players.score",
+          },
+          countScore: { $sum: 1 },
+        },
+      },
+    ]);
     stableFordData = [...stableFord];
   }
 
@@ -530,6 +575,7 @@ const recordScore = async (req, res) => {
         backNineArrLast: backNineArr1,
         strokePlayData: strokePlayData,
         stableFordData: stableFordData,
+        keywords: keywords,
         data: nextRoundData,
         totalHoles: frontNineRounds.length,
       });
