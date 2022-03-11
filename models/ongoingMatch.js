@@ -346,6 +346,8 @@ ongoingMatchSchema.statics.calFinalResult = async function (scheduledMatchId) {
         _id: null,
         tgPoints: { $sum: "$tgPoints" },
         bgPoints: { $sum: "$bgPoints" },
+        tgUpBy: { $sum: "$tgUpBy" },
+        bgUpBy: { $sum: "$bgUpBy" },
       },
     },
   ]);
@@ -360,28 +362,71 @@ ongoingMatchSchema.statics.calFinalResult = async function (scheduledMatchId) {
         _id: null,
         tgPoints: { $sum: "$tgPoints" },
         bgPoints: { $sum: "$bgPoints" },
+        tgUpBy: { $sum: "$tgUpBy" },
+        bgUpBy: { $sum: "$bgUpBy" },
       },
     },
   ]);
 
-  if (pointsBack.length == 1) {
-    //means they have played more than 9holes match
+  //diff at front9
+  const diff1 = pointsFront[0].tgUpBy - pointsFront[0].bgUpBy;
+  if (diff1 > 0) {
     resultObj.pointsFront = {
+      diff: diff1,
+      wonBy: "Top Group won Front 9",
+      points: pointsFront[0].tgPoints,
       tgPoints: pointsFront[0].tgPoints,
       bgPoints: pointsFront[0].bgPoints,
     };
-    resultObj.pointsBack = {
-      tgPoints: pointsBack[0].tgPoints,
-      bgPoints: pointsBack[0].bgPoints,
-    };
-  } else {
-    //means played 9holes match
-    //so no back9 concept
+  } else if (diff1 < 0) {
     resultObj.pointsFront = {
+      diff: Math.abs(diff1),
+      wonBy: "Bottom Group won Front 9",
+      points: pointsFront[0].bgPoints,
       tgPoints: pointsFront[0].tgPoints,
       bgPoints: pointsFront[0].bgPoints,
+    };
+  } else if (diff1 == 0) {
+    resultObj.pointsFront = {
+      diff: 0,
+      wonBy: "No Group won Front 9",
+      points: 0,
     };
   }
+  //diff at back9
+  let diff2;
+  if (pointsBack.length == 1) {
+    //console.log("reached");
+    //means back9 was played
+    diff2 = pointsBack[0].tgUpBy - pointsBack[0].bgUpBy;
+    if (diff2 > 0) {
+      resultObj.pointsBack = {
+        diff: diff2,
+        wonBy: "Top Group won Back 9",
+        points: pointsBack[0].tgPoints,
+        tgPoints: pointsBack[0].tgPoints,
+        bgPoints: pointsBack[0].bgPoints,
+      };
+    } else if (diff2 < 0) {
+      resultObj.pointsBack = {
+        diff: Math.abs(diff2),
+        wonBy: "Bottom Group won Back 9",
+        points: pointsBack[0].bgPoints,
+        tgPoints: pointsBack[0].tgPoints,
+        bgPoints: pointsBack[0].bgPoints,
+      };
+    } else if (diff2 == 0) {
+      resultObj.pointsBack = {
+        diff: 0,
+        wonBy: "No Group won Back 9",
+        points: 0,
+        tgPoints: pointsBack[0].tgPoints,
+        bgPoints: pointsBack[0].bgPoints,
+      };
+    }
+  }
+
+  //final match calulations
   //upBy
   const upBy = await this.aggregate([
     { $match: { scheduledMatchId: scheduledMatchId } },
@@ -414,11 +459,13 @@ ongoingMatchSchema.statics.calFinalResult = async function (scheduledMatchId) {
       total = match + resultObj.pointsFront.tgPoints;
       calStructure = `${match}+${resultObj.pointsFront.tgPoints}`;
     }
-
-    resultObj.wonBy = `Top Group won the match ${diff} Up`;
-    resultObj.match = `Top Group won ${match} points`;
-    resultObj.total = `Top Group won ${total} points`;
-    resultObj.calStructure = calStructure;
+    resultObj.wonBy = {
+      diff: diff,
+      wonBy: "Top Group won the match",
+      points:match,
+      totalPoints: total,
+      calStructure: calStructure,
+    };
   }
   //bg won cal
   else if (upBy[0].bgUp > upBy[0].tgUp) {
@@ -433,20 +480,26 @@ ongoingMatchSchema.statics.calFinalResult = async function (scheduledMatchId) {
       calStructure = `${match}+${resultObj.pointsFront.bgPoints}`;
     }
 
-    resultObj.wonBy = `Bottom Group won the match ${diff} Up`;
-    resultObj.match = `Bottom Group won ${match} points`;
-    resultObj.total = `Bottom Group won ${total} points`;
-    resultObj.calStructure = calStructure;
+    resultObj.wonBy = {
+      diff: diff,
+      wonBy: "Bottom Group won the match",
+      points: match,
+      totalPoints: total,
+      calStructure: calStructure,
+    };
   }
   //match tie
   else {
-    resultObj.wonBy = `Match Tie`;
-    resultObj.match = `Match Tie`;
-    resultObj.total = `Match Tie`;
-    resultObj.calStructure = 0;
+    resultObj.wonBy = {
+      diff: 0,
+      wonBy: "No Group won the match",
+      points: 0,
+      totalPoints: 0,
+      calStructure: 0,
+    };
   }
 
-  //console.log('resultObj',resultObj)
+  //return console.log("resultObj", resultObj);
   return resultObj;
 };
 
@@ -1187,14 +1240,14 @@ ongoingMatchSchema.statics.calFinalResultStroke = async function (
   const diff = topGrSum - bottGrSum;
   const points = diff * data1[0].scoringDetails.pointsPerStroke;
   const calStructure = `${Math.abs(diff)}*points`;
-  if (diff < 0) {
+  if (diff > 0) {
     //console.log('diff',diff,'topGr Wins',resultObj);
     resultObj.wonBy = {
       message: `Top Group won the match by ${Math.abs(diff)} strokes`,
       points: Math.abs(points),
       calStructure,
     };
-  } else if (diff > 0) {
+  } else if (diff < 0) {
     //console.log('diff',diff,'bottGr Wins',resultObj);
     resultObj.wonBy = {
       message: `Bottom Group won the match by ${Math.abs(diff)} strokes`,
@@ -1294,14 +1347,14 @@ ongoingMatchSchema.statics.calFinalResultStableFord = async function (
     data1[0].scoringDetails.pointsPerPoint
   }`;
 
-  if (diff < 0) {
+  if (diff > 0) {
     //console.log('diff',diff,'topGr Wins',resultObj);
     resultObj.wonBy = {
       message: `Top Group won the match by ${Math.abs(diff)} points`,
       points: Math.abs(points),
       calStructure,
     };
-  } else if (diff > 0) {
+  } else if (diff < 0) {
     //console.log('diff',diff,'bottGr Wins',resultObj);
     resultObj.wonBy = {
       message: `Bottom Group won the match by ${Math.abs(diff)} points`,

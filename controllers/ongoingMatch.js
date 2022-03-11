@@ -249,12 +249,13 @@ const roundDetails = async (roundId) => {
 
   if (data.scoringFormat == 4) {
     console.log("stableFord..");
+
     const keywords = await ongoingMatch.aggregate([
       {
         $match: {
-          _id: mongoose.Types.ObjectId(roundId),
           scheduledMatchId: data1.scheduledMatchId._id,
-          holeResult: { $in: [1, 2, 3] },
+          _id: { $lte: mongoose.Types.ObjectId(roundId) },
+          holeResult:{$in:[1,2,3]}
         },
       },
       { $unwind: "$players" },
@@ -269,7 +270,13 @@ const roundDetails = async (roundId) => {
       },
     ]);
 
+    const stableFord = await ongoingMatch.strokePlay(
+      roundId,
+      data1.scheduledMatchId._id
+    );
+
     resData.keywords = keywords;
+    resData.stableFordData = [...stableFord];
   }
 
   //final resData
@@ -315,7 +322,7 @@ mainly we update downIn&net
 and give roundResult
 */
 const recordScore = async (req, res) => {
-  //console.log('recordScore..')
+  console.log("recordScore..", req.params.roundId);
   const roundId = req.params.roundId;
   const scores = req.body.scores;
 
@@ -537,7 +544,8 @@ const recordScore = async (req, res) => {
       {
         $match: {
           scheduledMatchId: scheduledMatchId._id,
-          holeResult: { $in: [1, 2, 3] },
+          _id:{$lt:mongoose.Types.ObjectId(roundId)}
+          //holeResult: { $in: [1, 2, 3] },
         },
       },
       { $unwind: "$players" },
@@ -896,12 +904,13 @@ const leaderBoardData = async (req, res, next) => {
     ]);
 
     const finalData = data.slice(-1);
-    //console.log("check", finalData);
+    console.log("check", finalData);
     if (finalData.length != 0) {
       obj.holeNo = finalData[0].holeNo;
       obj.playerFirstName = `${finalData[0].players[0].playerId.firstName}`;
       obj.playerlastName = `${finalData[0].players[0].playerId.lastName}`;
       obj.teeName = finalData[0].players[0].teeColorCode;
+      obj.matchStroke=finalData[0].players[0].matchStroke;
       obj.SGr = data1[0].x;
       obj.SNet = data1[0].y;
 
