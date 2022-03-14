@@ -134,6 +134,27 @@ const startMatch = async (req, res) => {
       playerObj.stableFordNetSum = stabFordPointsNet;
       playerObj.stableFordGrossSum = 2;
 
+      //modified stableFord logic
+      let modifiedStableFordNet;
+      if (score >= 2) {
+        modifiedStableFordNet = -3;
+      } else if (score == 1) {
+        modifiedStableFordNet = -1;
+      } else if (score == 0) {
+        modifiedStableFordNet = 0;
+      } else if (score == -1) {
+        modifiedStableFordNet = 2;
+      } else if (score == -2) {
+        modifiedStableFordNet = 5;
+      } else if (score <= -3) {
+        modifiedStableFordNet = 8;
+      }
+      playerObj.modifiedStableFordNet = modifiedStableFordNet;
+      //if gross is 0 then points will be always 0 as per pdf
+      playerObj.modifiedStableFordGross = 0;
+      playerObj.modifiedStableFordNetSum = modifiedStableFordNet;
+      playerObj.modifiedStableFordGrossSum = 0;
+
       finalPlayer.push(playerObj);
     } //end for playersLoop
     insertObj["players"] = finalPlayer;
@@ -247,15 +268,15 @@ const roundDetails = async (roundId) => {
     resData.fontNine = score.matchArr;
   }
 
-  if (data.scoringFormat == 4) {
-    console.log("stableFord..");
+  if (data.scoringFormat == 4 || data.scoringFormat == 5) {
+    console.log(" from roundId stableFord or stableFordModified..");
 
     const keywords = await ongoingMatch.aggregate([
       {
         $match: {
           scheduledMatchId: data1.scheduledMatchId._id,
           _id: { $lte: mongoose.Types.ObjectId(roundId) },
-          holeResult:{$in:[1,2,3]}
+          holeResult: { $in: [1, 2, 3] },
         },
       },
       { $unwind: "$players" },
@@ -358,9 +379,11 @@ const recordScore = async (req, res) => {
   for (let score of scores) {
     let stabFordPointsNet;
     let stabFordPointsGross;
+    let modifiedStableFordPointsNet;
+    let modifiedStableFordPointsGross;
     const finalScore = score.net - par;
     const gross = score.downIn - par;
-    //assigning SN
+    //assigning SN for stableford
     if (finalScore >= 2) {
       stabFordPointsNet = 0;
     } else if (finalScore == 1) {
@@ -377,7 +400,22 @@ const recordScore = async (req, res) => {
       stabFordPointsNet = 6;
     }
 
-    //assigning SG
+    //assigning SN for modifiedstableford
+    if (finalScore >= 2) {
+      modifiedStableFordPointsNet = -3;
+    } else if (finalScore == 1) {
+      modifiedStableFordPointsNet = -1;
+    } else if (finalScore == 0) {
+      modifiedStableFordPointsNet = 0;
+    } else if (finalScore == -1) {
+      modifiedStableFordPointsNet = 2;
+    } else if (finalScore == -2) {
+      modifiedStableFordPointsNet = 5;
+    } else if (finalScore <= -3) {
+      modifiedStableFordPointsNet = 8;
+    }
+
+    //assigning SG for stableford
     if (gross >= 2) {
       stabFordPointsGross = 0;
     } else if (gross == 1) {
@@ -393,6 +431,21 @@ const recordScore = async (req, res) => {
     } else if (gross <= -4) {
       stabFordPointsGross = 6;
     }
+
+    //assigning SG for modifiedstableford
+    if (gross >= 2) {
+      modifiedStableFordPointsGross = -3;
+    } else if (gross == 1) {
+      modifiedStableFordPointsGross = -1;
+    } else if (gross == 0) {
+      modifiedStableFordPointsGross = 0;
+    } else if (gross == -1) {
+      modifiedStableFordPointsGross = 2;
+    } else if (gross == -2) {
+      modifiedStableFordPointsGross = 5;
+    } else if (gross <= -3) {
+      modifiedStableFordPointsGross = 8;
+    }
     await ongoingMatch.findOneAndUpdate(
       {
         _id: roundId,
@@ -406,6 +459,8 @@ const recordScore = async (req, res) => {
           "players.$.gross": gross,
           "players.$.stableFordNet": stabFordPointsNet,
           "players.$.stableFordGross": stabFordPointsGross,
+          "players.$.modifiedStableFordNet": modifiedStableFordPointsNet,
+          "players.$.modifiedStableFordGross": modifiedStableFordPointsGross,
         },
       }
     );
@@ -533,8 +588,8 @@ const recordScore = async (req, res) => {
   //stableFord
   let stableFordData = [];
   let keywords;
-  if (scoringFormat == 4) {
-    console.log("stableFord is being played...");
+  if (scoringFormat == 4 || scoringFormat == 5) {
+    console.log("stableFord or modified is being played...");
 
     const stableFord = await ongoingMatch.strokePlay(
       roundId,
@@ -544,7 +599,7 @@ const recordScore = async (req, res) => {
       {
         $match: {
           scheduledMatchId: scheduledMatchId._id,
-          _id:{$lt:mongoose.Types.ObjectId(roundId)}
+          _id: { $lt: mongoose.Types.ObjectId(roundId) },
           //holeResult: { $in: [1, 2, 3] },
         },
       },
@@ -604,7 +659,8 @@ const recordScore = async (req, res) => {
       scheduledMatchId._id,
       groupOptionsSeqId
     );
-  } else if (scoringFormat == 4) {
+  } else if (scoringFormat == 4 || scoringFormat == 5) {
+    console.log('both are being played..')
     finalMatchResult = await ongoingMatch.calFinalResultStableFord(
       scheduledMatchId._id,
       groupOptionsSeqId
@@ -910,7 +966,7 @@ const leaderBoardData = async (req, res, next) => {
       obj.playerFirstName = `${finalData[0].players[0].playerId.firstName}`;
       obj.playerlastName = `${finalData[0].players[0].playerId.lastName}`;
       obj.teeName = finalData[0].players[0].teeColorCode;
-      obj.matchStroke=finalData[0].players[0].matchStroke;
+      obj.matchStroke = finalData[0].players[0].matchStroke;
       obj.SGr = data1[0].x;
       obj.SNet = data1[0].y;
 

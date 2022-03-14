@@ -80,12 +80,21 @@ const ongoingMatchSchema = new mongoose.Schema(
         gross: {
           type: Number,
         },
-        //backend, will be calculated upon finalStroke
+        //backend, will be calculated upon score
         stableFordNet: {
           type: Number,
         },
+        //backend, will be calculated upon score
+        modifiedStableFordNet: {
+          type: Number,
+        },
+
         //backend, will calculated upon gross
         stableFordGross: {
+          type: Number,
+        },
+        //backend, will calculated upon gross
+        modifiedStableFordGross: {
           type: Number,
         },
         //backend
@@ -93,7 +102,15 @@ const ongoingMatchSchema = new mongoose.Schema(
           type: Number,
         },
         //backend
+        modifiedStableFordNetSum: {
+          type: Number,
+        },
+        //backend
         stableFordGrossSum: {
+          type: Number,
+        },
+        //backend
+        modifiedStableFordGrossSum: {
           type: Number,
         },
       },
@@ -144,7 +161,7 @@ const ongoingMatchSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
-      //will be used in stableford
+      //will be used in stableford & stableford-modified
       pointsPerPoint: {
         type: Number,
         default: 0,
@@ -462,7 +479,7 @@ ongoingMatchSchema.statics.calFinalResult = async function (scheduledMatchId) {
     resultObj.wonBy = {
       diff: diff,
       wonBy: "Top Group won the match",
-      points:match,
+      points: match,
       totalPoints: total,
       calStructure: calStructure,
     };
@@ -1152,6 +1169,10 @@ ongoingMatchSchema.statics.strokePlay = async function (
         scoreSum: { $sum: "$players.score" },
         stableFordNetSum: { $sum: "$players.stableFordNet" },
         stableFordGrossSum: { $sum: "$players.stableFordGross" },
+        modifiedStableFordNetSum: { $sum: "$players.modifiedStableFordNet" },
+        modifiedStableFordGrossSum: {
+          $sum: "$players.modifiedStableFordGross",
+        },
       },
     },
   ]);
@@ -1173,6 +1194,9 @@ ongoingMatchSchema.statics.strokePlay = async function (
           "players.$.scoreSum": data.scoreSum,
           "players.$.stableFordNetSum": data.stableFordNetSum,
           "players.$.stableFordGrossSum": data.stableFordGrossSum,
+          "players.$.modifiedStableFordNetSum": data.modifiedStableFordNetSum,
+          "players.$.modifiedStableFordGrossSum":
+            data.modifiedStableFordGrossSum,
         },
       }
     );
@@ -1312,9 +1336,19 @@ ongoingMatchSchema.statics.calFinalResultStableFord = async function (
     //console.log("inside if1");
     for (let player of data1[0].players) {
       if (player.playerSeqId == 1 || player.playerSeqId == 2) {
-        topGr.push(player.stableFordNetSum);
+        if (data1[0].scoringFormat == 4) {
+          topGr.push(player.stableFordNetSum);
+        } else {
+          console.log("finally1..");
+          topGr.push(player.modifiedStableFordNetSum);
+        }
       } else {
-        bottGr.push(player.stableFordNetSum);
+        if (data1[0].scoringFormat == 4) {
+          bottGr.push(player.stableFordNetSum);
+        } else {
+          console.log("finally2..");
+          bottGr.push(player.modifiedStableFordNetSum);
+        }
       }
     } //loop end
   }
@@ -1324,9 +1358,19 @@ ongoingMatchSchema.statics.calFinalResultStableFord = async function (
     //console.log('inside if2')
     for (let player of data1[0].players) {
       if (player.playerSeqId == 1) {
-        topGr.push(player.stableFordNetSum);
+        if (data1[0].scoringFormat==4){
+             topGr.push(player.stableFordNetSum);
+        } else{
+          console.log('finally3..')
+          topGr.push(player.modifiedStableFordNetSum);
+        }
       } else {
-        bottGr.push(player.stableFordNetSum);
+        if (data1[0].scoringFormat == 4){
+              bottGr.push(player.stableFordNetSum);
+        } else{
+          console.log("finally4..");
+          bottGr.push(player.modifiedStableFordNetSum);
+        }
       }
     } //loop end
   }
