@@ -147,7 +147,9 @@ const getMyUpcomingMatches = async (req, res) => {
       obj.players.push({
         playerName: `${firstName} ${lastName}`,
         profileImg: profileImg,
-        initials: `${firstName[0]?.toUpperCase()}${lastName?lastName[0]?.toUpperCase():''}`,
+        initials: `${firstName[0]?.toUpperCase()}${
+          lastName ? lastName[0]?.toUpperCase() : ""
+        }`,
       });
     }
     obj.matchId = _id;
@@ -200,18 +202,63 @@ const getMatchData = async (req, res) => {
   }
 };
 
+//if guest is added then we need to create profile
 const editUpcomingMatch = async (req, res) => {
-  console.log("update particular match..");
+  //console.log("update particular match..");
   const matchId = req.params.matchId;
-  const data = await scheduleMatch.findByIdAndUpdate(matchId, req.body, {
-    new: true,
+  const tagPlayerLists = req.body.players.filter((el) => {
+    return el.isGuest === false;
   });
-  const matchExpiry = data.matchDate + 21600;
-  await scheduleMatch.findByIdAndUpdate(matchId, {
-    $set: {
-      matchExpiry: matchExpiry,
+  const guestPlayerLists = req.body.players.filter((el) => {
+    return el.isGuest === true;
+  });
+
+
+  if (guestPlayerLists.length !== 0) {
+    //console.log("playing with guestPlayer..");
+    //loop through guestPlayerLists to create profile in users table
+    for (let el of guestPlayerLists) {
+      //console.log(el.name);
+      //console.log(`${el.name}${moment().format('x')}@gmail.com`);
+      const data = await User.create({
+        firstName: el.name,
+        phone: Math.floor(100000000 + Math.random() * 900000000),
+        email: `${el.name}${moment().format("x")}@gmail.com`,
+        password: "123",
+        status: 1,
+        tags: ["Guest"],
+      });
+
+      //pushing data into tagPlayerLists Array
+      //now we have _id of guestPlayer also
+      tagPlayerLists.push({
+        playerId: data._id,
+        name: el.name,
+        isGuest: true,
+        seqId: el.seqId,
+      });
+    }
+  }
+
+  const matchExpiry = req.body.matchDate * 1 + 21600;
+
+  const data = await scheduleMatch.findByIdAndUpdate(
+    matchId,
+    {
+      $set: {
+        groupOptions: req.body.groupOptions,
+        players: tagPlayerLists,
+        courseId: req.body.courseId,
+        matchDate: req.body.matchDate,
+        matchExpiry: matchExpiry,
+        createdBy: req.body.createdBy,
+      },
     },
-  });
+    {
+      new: true,
+    }
+  );
+  
   if (data) {
     /*
         ToDo:send pushNoti about updated details
@@ -308,7 +355,9 @@ const getMyFriendsUpcoming = async (req, res) => {
       obj.players.push({
         playerName: `${firstName} ${lastName}`,
         profileImg: profileImg,
-        initials: `${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`,
+        initials: `${firstName[0]?.toUpperCase()}${
+          lastName ? lastName[0]?.toUpperCase() : ""
+        }`,
       });
     }
     obj.matchId = _id;
