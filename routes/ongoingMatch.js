@@ -1,4 +1,4 @@
-const express=require('express');
+const express = require("express");
 const {
   startMatch,
   getRoundDetails,
@@ -10,33 +10,37 @@ const {
   pastMatches,
   deleteOngoingMatch,
   getTournaments,
-  leaderBoardData
+  leaderBoardData,
+  pastMatchesFriends,
 } = require("./../controllers/ongoingMatch");
 
-const router=express.Router();
+const router = express.Router();
 
-router.route('/startMatch').post(startMatch);
-router.route('/getRoundDetailsFor/:roundId').get(getRoundDetails);
-router.route('/recordScoreForRound/:roundId').patch(recordScore);
-router.route('/getAllRoundsFor/:matchId').get(getAllRounds);
-router.route('/canStartMatch/:userId').get(canStartMatch);
+router.route("/startMatch").post(startMatch);
+router.route("/getRoundDetailsFor/:roundId").get(getRoundDetails);
+router.route("/recordScoreForRound/:roundId").patch(recordScore);
+router.route("/getAllRoundsFor/:matchId").get(getAllRounds);
+router.route("/canStartMatch/:userId").get(canStartMatch);
 
 //endMatch
-router.route('/endMatchEarly').post(endMatchEarly);
+router.route("/endMatchEarly").post(endMatchEarly);
 
 //ongoing
-router.route('/ongoingMatch/:userId').get(myOngoingMatch);
+router.route("/ongoingMatch/:userId").get(myOngoingMatch);
 
 //pastMatches
-router.route('/getPastMatchesFor/:userId').get(pastMatches);
+router.route("/getPastMatchesFor/:userId").get(pastMatches);
+
+//pastMatches Friends
+router.route("/getPastMatchesFriends/:userId").get(pastMatchesFriends);
 
 //tournaments
 router.route("/getTournaments").get(getTournaments);
 
 //leaderBoard
-router.route('/getLeaderBoard/:groupId').get(leaderBoardData);
+router.route("/getLeaderBoard/:groupId").get(leaderBoardData);
 
 //delete my ongoingMatch
-router.route('/deleteOngoingMatch/:matchId').delete(deleteOngoingMatch);
+router.route("/deleteOngoingMatch/:matchId").delete(deleteOngoingMatch);
 
-module.exports=router;
+module.exports = router;

@@ -5,6 +5,7 @@ const scheduleMatch = require("./../models/scheduleMatch");
 const matchFormat = require("./../models/matchFormat");
 const Group = require("./../models/group");
 const mongoose = require("mongoose");
+const { friendLists } = require("./autoSuggestion");
 
 const startMatch = async (req, res) => {
   //console.log('startMatch..');
@@ -35,6 +36,7 @@ const startMatch = async (req, res) => {
 
     */
   let holeNoSeq = [];
+  1, 2, 3, 18;
   for (let i = 1; i <= totalHolesPlaying; i++) {
     holeNoSeq.push(matchStartedFromHoleNo);
     matchStartedFromHoleNo++;
@@ -660,7 +662,7 @@ const recordScore = async (req, res) => {
       groupOptionsSeqId
     );
   } else if (scoringFormat == 4 || scoringFormat == 5) {
-    console.log('both are being played..')
+    console.log("both are being played..");
     finalMatchResult = await ongoingMatch.calFinalResultStableFord(
       scheduledMatchId._id,
       groupOptionsSeqId
@@ -982,6 +984,71 @@ const leaderBoardData = async (req, res, next) => {
   });
 };
 
+//lists of pastMatches of myFriends
+const pastMatchesFriends = async (req, res, next) => {
+  console.log("my friends pastMatches..");
+  const userId = req.params.userId;
+
+  //get all my friends data including me
+  const myFriendsData = await friendLists(userId);
+  //get all my friends data excluding my id
+  const myFriendsLists = myFriendsData.filter((el) => {
+    return el.playerID !== userId;
+  });
+  //get all friends ids only
+  const myFriendsIds = myFriendsLists.map((el) => {
+    return el.playerID;
+  });
+
+  const totalRec = await scheduleMatch.find({
+    matchStatus: { $in: [3, 4] },
+    "players.playerId": { $ne: userId },
+    players: { $elemMatch: { playerId: { $in: myFriendsIds } } },
+  });
+
+  //get my friends all matches whose status is 3 or 4
+  const matches = scheduleMatch
+    .find({
+      matchStatus: { $in: [3, 4] },
+      "players.playerId": { $ne: userId },
+      players: { $elemMatch: { playerId: { $in: myFriendsIds } } },
+    })
+    .populate({
+      path: "courseId",
+      select: "courseName",
+    })
+    .populate({
+      path: "groupOptions",
+      select: "name seqId",
+    })
+    .populate({
+      path: "details",
+      select: "players holeNo par holeResult scoringFormat scoringDetails",
+      populate: {
+        path: "players.playerId",
+        select: "firstName lastName profileImg",
+      },
+      //select:'players holeNo holeResult scoringFormat scoringDetails'
+    })
+    .select("-players -createdAt -updatedAt -matchExpiry -createdBy")
+    .sort({ matchDate: -1 });
+
+  //pagination
+  const page = req.query.page * 1 || 1; //default will be pageNo 1
+  const limit = req.query.limit * 1 || 4; //default will be 10 rec/page
+  const skip = (page - 1) * limit;
+
+  const data = await matches.skip(skip).limit(limit);
+
+  if (data) {
+    res.status(200).json({
+      status: true,
+      totalRec: totalRec.length,
+      data: data,
+    });
+  }
+};
+
 module.exports = {
   startMatch,
   getRoundDetails,
@@ -994,4 +1061,5 @@ module.exports = {
   deleteOngoingMatch,
   getTournaments,
   leaderBoardData,
+  pastMatchesFriends,
 };
