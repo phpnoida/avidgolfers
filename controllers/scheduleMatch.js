@@ -124,6 +124,18 @@ const getMyUpcomingMatches = async (req, res) => {
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
   const skip = (page - 1) * limit;
+
+  //sending totalRec for pagination frontend
+  const totalRec = await custom_query
+    .populate({
+      path: "players.playerId",
+      select: "firstName lastName profileImg",
+    })
+    .populate({
+      path: "courseId",
+      select: "courseName",
+    });
+    
   const myUpcoming = await custom_query
     .populate({
       path: "players.playerId",
@@ -163,7 +175,7 @@ const getMyUpcomingMatches = async (req, res) => {
   if (myUpcoming) {
     res.status(200).json({
       status: true,
-      totalRec: myUpcoming.length,
+      totalRec: totalRec.length,
       data: resData,
     });
   }
@@ -330,6 +342,18 @@ const getMyFriendsUpcoming = async (req, res) => {
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
   const skip = (page - 1) * limit;
+
+  //sending totalRec so that pagination can be implemented
+  const totalRec = await custom_query
+    .populate({
+      path: "players.playerId",
+      select: "firstName lastName profileImg",
+    })
+    .populate({
+      path: "courseId",
+      select: "courseName",
+    });
+
   const myFriendsUpcoming = await custom_query
     .populate({
       path: "players.playerId",
@@ -341,6 +365,8 @@ const getMyFriendsUpcoming = async (req, res) => {
     })
     .skip(skip)
     .limit(limit);
+
+  
 
   //send to frontend only desired outputs
 
@@ -371,7 +397,7 @@ const getMyFriendsUpcoming = async (req, res) => {
   if (myFriendsUpcoming) {
     res.status(200).json({
       status: true,
-      totalRec: myFriendsUpcoming.length,
+      totalRec: totalRec.length,
       data: resData,
     });
   }

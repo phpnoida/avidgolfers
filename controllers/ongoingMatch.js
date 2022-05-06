@@ -36,7 +36,6 @@ const startMatch = async (req, res) => {
 
     */
   let holeNoSeq = [];
-  1, 2, 3, 18;
   for (let i = 1; i <= totalHolesPlaying; i++) {
     holeNoSeq.push(matchStartedFromHoleNo);
     matchStartedFromHoleNo++;
@@ -216,7 +215,7 @@ const roundDetails = async (roundId) => {
     })
     .populate({
       path: "holeId",
-      select: "par holeMap strokes",
+      select: "par holeMap strokes holeName about video",
     })
     .populate({
       path: "players.playerId",
@@ -233,7 +232,7 @@ const roundDetails = async (roundId) => {
 
   const { _id, holeResult, holeNo, holeId, players, courseId, editingRights } =
     data1;
-  const { par, holeMap, strokes } = holeId;
+  const { par, holeMap, strokes,holeName,video,about } = holeId;
   const { courseName } = courseId;
   //getting editor details
   const editor = players.find((player) => {
@@ -255,6 +254,51 @@ const roundDetails = async (roundId) => {
       strokeplayersName.push(player.playerId.firstName);
     }
   }
+
+  //fixing bug Dated 4th May-2022
+  //matchPlay sending match status 
+  //ex topGr is 2up or bottomGr is 3up
+  if(data.scoringFormat===2){
+    //console.log('matchPlay format..');
+    const keywords = await ongoingMatch.aggregate([
+      {
+        $match: {
+          scheduledMatchId: data1.scheduledMatchId._id,
+          _id: { $lte: mongoose.Types.ObjectId(roundId) },
+          holeResult: { $in: [1, 2, 3] },
+        },
+      },
+      {
+        $group: {
+          _id:null,
+          tgUpBy: { $sum: "$tgUpBy" },
+          bgUpBy: { $sum: "$bgUpBy" },
+        },
+      },
+    ]);
+    //console.log('keywords-->',keywords)
+    resData.keywords = keywords;
+    if(keywords.length===0){
+      resData.keywords = 'Match is All Square';
+    }else{
+      const tgUpBy = keywords[0].tgUpBy;
+      const bgUpBy = keywords[0].bgUpBy;
+      const diff = tgUpBy-bgUpBy;
+      if(diff===0){
+        resData.keywords = "Match is All Square";
+      }
+
+      else if(diff>0){
+        resData.keywords = `Top Group is up by ${diff}`;
+      }
+
+      else if(diff<0){
+        resData.keywords = `Bottom Group is up by ${Math.abs(diff)}`;
+
+      }
+    }
+  }
+
 
   //autoPress sedning 9th hole matchArr result
   //getting score at 9th hole
@@ -312,6 +356,9 @@ const roundDetails = async (roundId) => {
   resData.yards = yards;
   resData.index = holeStroke;
   resData.holeMap = holeMap;
+  resData.holeVideo=video;
+  resData.holeAbout=about;
+  resData.holeName=holeName;
   resData.holeResult = holeResult;
   resData.players = players;
   resData.strokeGivenTo = strokeplayersName;
