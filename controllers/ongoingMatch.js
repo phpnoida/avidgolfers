@@ -110,7 +110,7 @@ const startMatch = async (req, res) => {
       playerObj.downInSum = par;
       playerObj.netSum = net;
       playerObj.scoreSum = score;
-      
+
       //stableFord logic written
       let stabFordPointsNet;
       if (score >= 2) {
@@ -968,16 +968,12 @@ const pastMatches = async (req, res, next) => {
 
 //tournaments
 const getTournaments = async (req, res, next) => {
-  console.log("tournaments listings..");
+  //console.log("tournaments listings..");
   const data = [
     {
-      groupId: "621deef77549ca71370b9d28",
-      name: "YPO 10 and Under Cup",
-    },
-    {
-      groupId: "621def727549ca71370b9e25",
-      name: "YPO 11 and Over Cup",
-    },
+      groupId: "6279f038e173881502a873fe",
+      name: "AVT June Strokeplay Tournament",
+    }
   ];
   res.status(200).json({
     status: true,
@@ -1017,22 +1013,26 @@ const leaderBoardData = async (req, res, next) => {
       {
         $group: {
           _id: null,
-          x: { $sum: "$players.stableFordGross" },
-          y: { $sum: "$players.stableFordNet" },
+          x: { $sum: "$players.scoreSum" },
+          y: { $sum: "$players.downInSum" },
+          z:{ $sum: "$players.netSum" },
         },
       },
     ]);
-
+    //console.log('abc-->',data)
     const finalData = data.slice(-1);
-    console.log("check", finalData);
+    //console.log("check", finalData);
     if (finalData.length != 0) {
       obj.holeNo = finalData[0].holeNo;
-      obj.playerFirstName = `${finalData[0].players[0].playerId.firstName}`;
-      obj.playerlastName = `${finalData[0].players[0].playerId.lastName}`;
-      obj.teeName = finalData[0].players[0].teeColorCode;
+      obj.playerFirstName = `${finalData[0].players[0].playerId?.firstName}`;
+      obj.playerlastName = `${finalData[0].players[0].playerId?.lastName}`;
+      obj.teeColorCode = finalData[0].players[0].teeColorCode;
+      obj.teeName = finalData[0].players[0].teeName;
       obj.matchStroke = finalData[0].players[0].matchStroke;
-      obj.SGr = data1[0].x;
-      obj.SNet = data1[0].y;
+      obj.Score = data1[0].x;
+      obj.Gross = data1[0].y;
+      obj.Net=data1[0].z;
+      obj.totalPlayed=data.length<=18?data.length:data.length-18;
 
       resData.push(obj);
     }
@@ -1040,9 +1040,9 @@ const leaderBoardData = async (req, res, next) => {
   res.status(200).json({
     status: true,
     data: resData,
-    bannerImg: "",
-    title1: "YPO Stableford Open - RCGC, Calcutta",
-    title2: "Royal Calcutta - 10 Mar - 11 Mar,2022",
+    bannerImg: "https://picsum.photos/200/300",
+    title1: "AVT Champions Open - RCGC, Calcutta",
+    title2: "Royal Calcutta - 2 Jun - 3 Jun,2022",
   });
 };
 
