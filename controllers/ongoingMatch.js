@@ -110,6 +110,7 @@ const startMatch = async (req, res) => {
       playerObj.downInSum = par;
       playerObj.netSum = net;
       playerObj.scoreSum = score;
+      
       //stableFord logic written
       let stabFordPointsNet;
       if (score >= 2) {
